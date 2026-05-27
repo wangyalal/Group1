@@ -1,0 +1,162 @@
+# ===============================
+# SMART BUDGET TRACKER SYSTEM
+# ACP PROJECT
+# ===============================
+
+import sqlite3
+from datetime import datetime
+import pandas as pd
+
+# ================= DATABASE =================
+
+conn = sqlite3.connect("budget_tracker.db")
+cursor = conn.cursor()
+
+cursor.execute("""
+CREATE TABLE IF NOT EXISTS income (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    source TEXT,
+    amount REAL,
+    date TEXT
+)
+""")
+
+cursor.execute("""
+CREATE TABLE IF NOT EXISTS expenses (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    category TEXT,
+    amount REAL,
+    description TEXT,
+    date TEXT
+)
+""")
+
+conn.commit()
+
+# ================= FUNCTIONS =================
+
+def add_income():
+    source = input("Enter income source: ")
+    amount = float(input("Enter amount: "))
+
+    date = datetime.now().strftime("%Y-%m-%d")
+
+    cursor.execute(
+        "INSERT INTO income (source, amount, date) VALUES (?, ?, ?)",
+        (source, amount, date)
+    )
+
+    conn.commit()
+
+    print("✅ Income added successfully!")
+
+def add_expense():
+    category = input("Enter category: ")
+    amount = float(input("Enter amount: "))
+    description = input("Enter description: ")
+
+    date = datetime.now().strftime("%Y-%m-%d")
+
+    cursor.execute(
+        "INSERT INTO expenses (category, amount, description, date) VALUES (?, ?, ?, ?)",
+        (category, amount, description, date)
+    )
+
+    conn.commit()
+
+    print("✅ Expense added successfully!")
+
+def view_summary():
+
+    cursor.execute("SELECT SUM(amount) FROM income")
+    total_income = cursor.fetchone()[0]
+
+    cursor.execute("SELECT SUM(amount) FROM expenses")
+    total_expenses = cursor.fetchone()[0]
+
+    if total_income is None:
+        total_income = 0
+
+    if total_expenses is None:
+        total_expenses = 0
+
+    balance = total_income - total_expenses
+
+    print("\\n========== FINANCIAL SUMMARY ==========")
+    print(f"Total Income: NT$ {total_income:.2f}")
+    print(f"Total Expenses: NT$ {total_expenses:.2f}")
+    print(f"Balance: NT$ {balance:.2f}")
+
+    if total_expenses > total_income:
+        print("⚠ WARNING: Overspending detected!")
+    else:
+        print("✅ Budget is under control")
+
+def view_transactions():
+
+    income_df = pd.read_sql_query(
+        "SELECT source AS Name, amount, date, 'Income' AS Type FROM income",
+        conn
+    )
+
+    expense_df = pd.read_sql_query(
+        "SELECT category AS Name, amount, date, 'Expense' AS Type FROM expenses",
+        conn
+    )
+
+    all_data = pd.concat([income_df, expense_df])
+
+    print("\\n========== TRANSACTIONS ==========")
+    display(all_data)
+
+def expense_report():
+
+    query = '''
+    SELECT category, SUM(amount) as total
+    FROM expenses
+    GROUP BY category
+    '''
+
+    report = pd.read_sql_query(query, conn)
+
+    print("\\n========== EXPENSE REPORT ==========")
+    display(report)
+
+# ================= MAIN MENU =================
+
+while True:
+
+    print("\\n==============================")
+    print(" SMART BUDGET TRACKER SYSTEM ")
+    print("==============================")
+
+    print("1. Add Income")
+    print("2. Add Expense")
+    print("3. View Summary")
+    print("4. View Transactions")
+    print("5. Expense Report")
+    print("6. Exit")
+
+    choice = input("Choose an option: ")
+
+    if choice == "1":
+        add_income()
+
+    elif choice == "2":
+        add_expense()
+
+    elif choice == "3":
+        view_summary()
+
+    elif choice == "4":
+        view_transactions()
+
+    elif choice == "5":
+        expense_report()
+
+    elif choice == "6":
+        print("Goodbye!")
+        break
+
+    else:
+        print("Invalid option.")
