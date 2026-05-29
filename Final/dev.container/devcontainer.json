@@ -1,0 +1,12 @@
+{
+  "name": "Python Project Setup",
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "ms-python.python",
+        "ms-python.vscode-pylance"
+      ]
+    }
+  },
+  "postCreateCommand": "pip3 install ttkbootstrap"
+}
