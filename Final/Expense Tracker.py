@@ -2,6 +2,7 @@ import ttkbootstrap as tb
 from ttkbootstrap.constants import YES, BOTH
 from datetime import datetime
 from ttkbootstrap.scrolled import ScrolledText
+from ledger import LedgerFrame
 
 #Displays Graphs
 class graph_page(tb.Frame):
@@ -20,10 +21,7 @@ class transaction_page(tb.Frame):
         super().__init__(parent)
         title = tb.Label(self, text="Transactions")
         title.pack(anchor="center", pady=10)
-
-        #TODO please remove this and add tabel of transactions
-        placeholder = tb.Label(self, text="[ Transactions Table will render here ]", font=("helvetica", 16, "bold"))
-        placeholder.pack(pady=50)
+        LedgerFrame(self).pack(fill=BOTH, expand=YES)
       
         
 #display settings page
