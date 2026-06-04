@@ -62,6 +62,7 @@ class graph_page(tb.Frame):
             canvas_widget = canvas.get_tk_widget()
             canvas_widget.pack(fill="both", expand=True, padx=10, pady=10)
             canvas.draw()    
+        self.generate_analytics_chart()     
 
 #displays Transtion history
 class transaction_page(tb.Frame):
@@ -248,3 +249,44 @@ if  __name__ == "__main__":
     app.run()
 
     
+def generate_analytics_chart(self):
+        try:
+            tx_data = tx.get_all_transactions()
+        except Exception as e:
+            print(f"Error fetching chart data: {e}")
+            return
+
+        df = pd.DataFrame(tx_data, columns=['Date', 'Description', 'Category', 'Amount', 'Type', 'Method'])
+        df['Amount'] = df['Amount'].apply(lambda x: abs(float(x)))
+        expenses_df = df[df['Type'] == 'Expense']
+        final_data = expenses_df.groupby('Category')['Amount'].sum().sort_values(ascending=False)
+        
+        if final_data.empty:
+            return
+
+        fig, ax = plt.subplots(figsize=(6, 4), dpi=100)
+        modern_colors = ['#2962FF', '#00C853', '#FFAB40', '#4DD0E1', '#FDD835', '#AA00FF']
+        
+        ax.pie(
+            final_data, 
+            labels=final_data.index, 
+            colors=modern_colors, 
+            autopct='%1.1f%%', 
+            startangle=90, 
+            wedgeprops={'linewidth': 1.5, 'edgecolor': 'white'},
+            textprops={'color': 'black', 'fontweight': 'bold', 'fontsize': 10},
+            pctdistance=0.8
+        )
+        
+        ax.set_title("Expenditure Breakdown by Category", fontsize=12, fontweight='bold', pad=15)
+        ax.axis('equal') 
+        ax.legend(title="Categories", labels=final_data.index, loc="best", fontsize=9)
+        fig.tight_layout()
+
+        for widget in self.winfo_children():
+            widget.destroy()
+
+        canvas = FigureCanvasTkAgg(fig, master=self)
+        canvas_widget = canvas.get_tk_widget()
+        canvas_widget.pack(fill="both", expand=True, padx=10, pady=10)
+        canvas.draw()
