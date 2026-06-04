@@ -10,6 +10,7 @@ from ttkbootstrap.constants import YES, BOTH
 from datetime import datetime
 from ttkbootstrap.scrolled import ScrolledText
 from ledger import LedgerFrame
+from current_rates import currency_rate as cr
 
 
 #Displays Graphs
@@ -70,18 +71,67 @@ class transaction_page(tb.Frame):
         title = tb.Label(self, text="Transactions")
         title.pack(anchor="center", pady=10)
         LedgerFrame(self).pack(fill=BOTH, expand=YES)
+
+
       
         
-#display settings page
-class settings_page(tb.Frame): 
+#display currency page
+
+#TODO make make a display where there is a connection error
+class currency_page(tb.Frame): 
     def __init__(self, parent):
         super().__init__(parent)
-        title = tb.Label(self, text="Settings")
+        title = tb.Label(self, text="Currency", font=("helvetica", 16, "bold"))
         title.pack(anchor="center", pady=10)
+        refresh_btn = tb.Button(self, text="Refresh Page", command= self.load_table_data, bootstyle= "primary")
+        refresh_btn.pack(padx= "5", pady= "5", side= "top")
+        table_frame = tb.Frame(self)
+        table_frame.pack(fill= BOTH, expand= YES, padx=10, pady=10)
+        
+        table_layout = ("Currency", "Rate")
+        self.rates_table = tb.Treeview(table_frame, columns=table_layout, show="headings")
+        self.rates_table.heading("Currency", text="Currency")
+        self.rates_table.heading("Rate", text="Today's Exchange Rate", anchor="center")
 
-        #TODO Please remove this and add settings functions
-        placeholder = tb.Label(self, text="[ Settings Page ]", font=("helvetica", 16, "bold"))
-        placeholder.pack(pady= 50 )
+        self.rates_table.column("Currency", anchor="center", width= 250)
+        self.rates_table.column("Rate", anchor="center", width=250)
+
+        self.rates_table.pack(fill=BOTH,expand= YES)
+
+        self.load_table_data()
+
+
+    def load_table_data(self):
+        #clears data so that it can be freshed
+        for row in self.rates_table.get_children():
+            self.rates_table.delete(row)
+
+        try: 
+            rates = cr()
+        except Exception as e:
+            print(f"Failed to Fetch rates: {e}") 
+            rates = {}
+        
+        currency_names = {
+            "USD": "US Dollar",
+            "JPY": "Japanese Yen",
+            "EUR": "EURO",
+            "GDP": "British Pound",
+            "AUD": "Australian Dollar",
+            "CAD": "Canadian Dollar",
+            "CNY": "Chinese Yan",
+            "KRW": "South Korean Won"
+        }
+
+
+        for currency_code, full_name in currency_names.items():
+            if currency_code in rates:
+                rate_value = rates[currency_code]
+                twd_exchange_rate = 1 / rate_value
+                formatted_rate_string = f"1 {currency_code} = {twd_exchange_rate:.2f} TWD"
+                self.rates_table.insert("", "end" , values=(full_name, formatted_rate_string))
+
+
 
 #main window
 class Expense_Tracker_Main:
@@ -107,7 +157,7 @@ class Expense_Tracker_Main:
         
         #right side contents
             #tab section
-        self.notebook = tb.Notebook(self.rightside, bootstyle="dark") #entire space
+        self.notebook = tb.Notebook(self.rightside, bootstyle="dark")
         self.notebook.pack(expand=True, fill=BOTH)
         self.notebook.configure(width=400)
 
@@ -116,7 +166,7 @@ class Expense_Tracker_Main:
         style.configure('TNotebook.Tab', width=1000, anchor="center")
 
    
-        tab1= tb.Frame(self.notebook)#tab one content
+        tab1= tb.Frame(self.notebook, height= 50)#tab one content
 
         #Date entry section
         self.selecte_date=tb.DateEntry(tab1, dateformat= "%Y-%m-%d")
@@ -155,7 +205,6 @@ class Expense_Tracker_Main:
         add_transaction.pack(fill= "x",padx= (30, 25), pady=(15,0) )
 
         tab2= tb.Frame(self.notebook)#tab two content
-        #TODO make the layouts buttons here:
         self.Tab2=tb.Label(tab2, text = "Chat Box place holder", font=("helvetica", 12))
         self.Tab2.pack(expand=True)
 
@@ -194,9 +243,9 @@ class Expense_Tracker_Main:
         self.current_pages = transaction_page(self.display_container)
         self.current_pages.pack(fill= BOTH, expand= YES)
          
-    def load_settings(self):
+    def load_currencies(self):
         self.clean_pages()
-        self.current_pages = settings_page(self.display_container)
+        self.current_pages = currency_page(self.display_container)
         self.current_pages.pack(fill= BOTH, expand= YES)
 
 
@@ -219,8 +268,8 @@ class Expense_Tracker_Main:
         self.transactions_button = tb.Button(self.nav_bar, text="Transactions", command= self.load_transactions, bootstyle="dark-flat")
         self.transactions_button.pack(side="left", fill="y", padx=10)
 
-        self.settings_button = tb.Button(self.nav_bar, text="Settings", command= self.load_settings, bootstyle="dark-flat")
-        self.settings_button.pack(side="left", fill="y", padx=10)
+        self.currency_button = tb.Button(self.nav_bar, text="Curriences", command= self.load_currencies, bootstyle="dark-flat")
+        self.currency_button.pack(side="left", fill="y", padx=10)
         
         self.display_container = tb.Frame(self.leftside, bootstyle="primary")
         self.display_container.pack(fill="both", expand= YES, padx= 25, pady=25) 
