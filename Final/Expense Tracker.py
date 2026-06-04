@@ -62,7 +62,7 @@ class graph_page(tb.Frame):
             canvas_widget = canvas.get_tk_widget()
             canvas_widget.pack(fill="both", expand=True, padx=10, pady=10)
             canvas.draw()    
-        self.generate_analytics_chart()     
+            self.generate_analytics_chart()     
 
 #displays Transtion history
 class transaction_page(tb.Frame):
