@@ -1,3 +1,4 @@
+import threading
 import matplotlib
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
@@ -6,12 +7,13 @@ from collections import defaultdict
 import transactions as tx
 import pandas as pd
 import ttkbootstrap as tb
-from ttkbootstrap.constants import YES, BOTH
+from ttkbootstrap.constants import *
+from ttkbootstrap.dialogs import Messagebox
 from datetime import datetime
 from ttkbootstrap.scrolled import ScrolledText
 from ledger import LedgerFrame
 from current_rates import currency_rate as cr
-
+from parser import parse_natural_language_expense
 
 #Displays Graphs
 class graph_page(tb.Frame):
@@ -142,6 +144,8 @@ class Expense_Tracker_Main:
         self.root.geometry("1200x600")
         self.current_pages = None
         self.transaction_type = "Expense"
+        self.current_parsed_data = None
+        self.selected_type = None
         self.left_side()
         self.right_side() 
         self.load_graph()
@@ -205,28 +209,228 @@ class Expense_Tracker_Main:
         add_transaction.pack(fill= "x",padx= (30, 25), pady=(15,0) )
 
         tab2= tb.Frame(self.notebook)#tab two content
-        self.Tab2=tb.Label(tab2, text = "Chat Box place holder", font=("helvetica", 12))
-        self.Tab2.pack(expand=True)
+        self.main_container = tb.Frame(tab2)
+        self.main_container.pack(fill=BOTH, expand=YES, side=TOP)
 
-
-        #This would have to be set to lock. rewrite when you start working on it
-        self.text_display = ScrolledText(tab2, 
-            padding= 10,
-            height = 10, 
-            autohide= True, 
-            wrap = "word"
-        ) 
-
-        
-        self.text_display.pack(fill=BOTH, expand=True, padx=10, pady=10)
-        self.text_input = tb.Entry(tab2, textvariable="Type Something...")
-        self.text_input.pack(fill="x", expand= False, padx=5, pady=5  )
-
+        # Setup Integrated Components on AI enabled tab
+        self.setup_ai_input_section(self.main_container)
+        self.setup_ai_review_section(self.main_container)
 
         #calling both tabs to run
         self.notebook.add(tab1, text="Manual")
         self.notebook.add(tab2, text="Chat Box")
     
+    def setup_ai_input_section(self, parent_frame):
+        """Creates the natural language text entry area using a large text box."""
+        input_frame = tb.Frame(parent_frame)
+        input_frame.pack(fill=X, pady=(15, 10), padx=30)
+
+        # Section Header
+        lbl_section1 = tb.Label(input_frame, text="AI Transaction Parsing Agent", font=("Helvetica", 10, "bold"))
+        lbl_section1.pack(anchor=W, pady=(0, 5), padx=10)
+
+        # Instructions
+        lbl = tb.Label(
+            input_frame, 
+            text="Enter transaction in plain English:\n(e.g., 'Bought a sofa last week tuesday $400')", 
+            font=("Helvetica", 10),
+            justify=LEFT,
+            wraplength=320  
+        )
+        lbl.pack(anchor=W, pady=(5, 5), padx=10)
+
+        # ScrolledText to make it vertically larger (height=3 lines)
+        self.user_input_entry = ScrolledText(
+            input_frame, 
+            font=("Helvetica", 10), 
+            height=3, 
+            autohide=True, 
+            wrap="word"
+        )
+        self.user_input_entry.pack(fill=X, pady=5, padx=10)
+        
+        # Bind enter key to execute when pressing Enter.
+        self.user_input_entry.bind("<Return>", lambda event: self.trigger_parsing_from_entry())
+
+        # Action Buttons Wrapper
+        btn_wrapper = tb.Frame(input_frame)
+        btn_wrapper.pack(fill=X, pady=5, padx=10)
+
+        self.parse_btn = tb.Button(btn_wrapper, text="Parse Statement", bootstyle=PRIMARY, command=self.start_parsing_thread)
+        self.parse_btn.pack(side=RIGHT)
+
+        # Loading Progress Bar
+        self.progress_bar = tb.Progressbar(input_frame, bootstyle=INFO, mode='indeterminate')
+
+    def setup_ai_review_section(self, parent_frame):
+        """Creates data review fields styled flat, matching the Manual tab."""
+        self.review_frame = tb.Frame(parent_frame)
+        self.review_frame.pack(fill=X, pady=(10, 15), padx=30)
+
+        # Section Header
+        lbl_section2 = tb.Label(self.review_frame, text="Review & Confirm Extracted Data", font=("Helvetica", 10, "bold"))
+        lbl_section2.pack(anchor=W, pady=(0, 10), padx=10)
+
+        # 1. Date Field
+        lbl_date = tb.Label(self.review_frame, text="Date:", font=("Helvetica", 9, "bold"))
+        lbl_date.pack(anchor=W, padx=10, pady=(5, 0))
+        self.ai_selected_date = tb.DateEntry(self.review_frame, dateformat="%Y-%m-%d")
+        self.ai_selected_date.pack(fill=X, pady=5, padx=10)
+        
+        # 2. Amount Field
+        lbl_amt = tb.Label(self.review_frame, text="Amount ($):", font=("Helvetica", 9, "bold"))
+        lbl_amt.pack(anchor=W, padx=10, pady=(5, 0))
+        self.ai_enter_amount = tb.Entry(self.review_frame)
+        self.ai_enter_amount.insert(0, "$0.00")
+        self.ai_enter_amount.pack(fill=X, pady=5, padx=10)
+
+        # 3. Streamlined Description Field
+        lbl_desc = tb.Label(self.review_frame, text="Description:", font=("Helvetica", 9, "bold"))
+        lbl_desc.pack(anchor=W, padx=10, pady=(5, 0))
+        
+        # 4 line description box
+        self.ai_enter_description = ScrolledText(
+            self.review_frame, 
+            font=("Helvetica", 10), 
+            height=4, 
+            autohide=True, 
+            wrap="word"
+        )
+        self.ai_enter_description.pack(fill=X, pady=5, padx=10)
+
+        # 4. Transaction type Selection Buttons
+        lbl_type = tb.Label(self.review_frame, text="Transaction Type:", font=("Helvetica", 9, "bold"))
+        lbl_type.pack(anchor=W, padx=10, pady=(5, 0))
+        
+        button_frame = tb.Frame(self.review_frame)
+        button_frame.pack(fill=X, pady=5, padx=10)
+        
+        self.ai_income_btn = tb.Button(button_frame, text="Income", bootstyle="secondary",
+                                       command=lambda: self.set_review_type("Income"))
+        self.ai_income_btn.pack(side=LEFT, expand=True, padx=(0, 5), fill=X)
+        
+        self.ai_expense_btn = tb.Button(button_frame, text="Expense", bootstyle="secondary", 
+                                        command=lambda: self.set_review_type("Expense"))
+        self.ai_expense_btn.pack(side=LEFT, expand=True, padx=(5, 0), fill=X)   
+
+        # 5. Category Selection Dropdown
+        lbl_cat = tb.Label(self.review_frame, text="Category:", font=("Helvetica", 9, "bold"))
+        lbl_cat.pack(anchor=W, padx=10, pady=(5, 0))
+        
+        self.ai_category_selc = tb.Combobox(self.review_frame, values=self.expense_categories, state="readonly")
+        self.ai_category_selc.pack(fill=X, pady=5, padx=10)
+        self.ai_category_selc.set("Select a category")
+
+        # Core Action Buttons Block
+        action_frame = tb.Frame(self.review_frame)
+        action_frame.pack(fill=X, pady=15, padx=10)
+
+        self.ai_save_btn = tb.Button(action_frame, text="Add Transaction", bootstyle=SUCCESS, state=DISABLED, command=self.save_to_database)
+        self.ai_save_btn.pack(side=RIGHT, padx=(5, 0))
+
+        self.ai_clear_btn = tb.Button(action_frame, text="Clear", bootstyle=SECONDARY, command=self.clear_form)
+        self.ai_clear_btn.pack(side=RIGHT, padx=(0, 5))
+
+    # --- AI CORE LOGIC HANDLERS ---
+
+    def set_review_type(self, trans_type):
+        self.selected_type = trans_type
+        if trans_type == "Income":
+            self.ai_income_btn.config(bootstyle="success")
+            self.ai_expense_btn.config(bootstyle="secondary")
+            self.ai_category_selc.config(values=self.income_categories)
+        else:
+            self.ai_income_btn.config(bootstyle="secondary")
+            self.ai_expense_btn.config(bootstyle="danger")
+            self.ai_category_selc.config(values=self.expense_categories)
+
+    def trigger_parsing_from_entry(self):
+        self.start_parsing_thread()
+        return "break"  
+
+    def start_parsing_thread(self):
+        text = self.user_input_entry.get("1.0", END).strip()
+        if not text:
+            return
+        
+        self.parse_btn.config(state=DISABLED)
+        self.ai_save_btn.config(state=DISABLED)
+        self.progress_bar.pack(fill=X, pady=5, padx=10)
+        self.progress_bar.start()
+
+        threading.Thread(target=self.async_parse_worker, args=(text,), daemon=True).start()
+
+    def async_parse_worker(self, text):
+        try:
+            parsed_json = parse_natural_language_expense(text)
+            self.root.after(0, self.on_parsing_success, parsed_json)
+        except Exception as e:
+            self.root.after(0, self.on_parsing_failure, str(e))
+
+    def on_parsing_success(self, data):
+        self.progress_bar.stop()
+        self.progress_bar.pack_forget()
+        self.parse_btn.config(state=NORMAL)
+
+        self.current_parsed_data = data
+
+        # Update Date Entry Widget
+        target_date = data.get("transaction_date", "")
+        if target_date:
+            self.ai_selected_date.entry.delete(0, END)
+            self.ai_selected_date.entry.insert(0, target_date)
+
+        # Update Amount Field
+        self.ai_enter_amount.delete(0, END)
+        self.ai_enter_amount.insert(0, f"${float(data.get('amount', 0)):.2f}")
+
+        # Update Description Entry Field
+        self.ai_enter_description.delete("1.0", END)
+        self.ai_enter_description.insert("1.0", data.get("description", ""))
+
+        # Set Type & Categories
+        parsed_type = data.get("transaction_type", "Expense")
+        self.set_review_type(parsed_type)
+
+        parsed_cat = data.get("category", "Other")
+        self.ai_category_selc.set(parsed_cat)
+
+        self.ai_save_btn.config(state=NORMAL)
+
+    def on_parsing_failure(self, error_msg):
+        self.progress_bar.stop()
+        self.progress_bar.pack_forget()
+        self.parse_btn.config(state=NORMAL)
+        Messagebox.show_error(f"Failed to process statement:\n{error_msg}", title="AI Parser Error")
+
+    def save_to_database(self):
+        raw_amount = self.ai_enter_amount.get().replace("$", "")
+        
+        final_data = {
+            "transaction_date": self.ai_selected_date.entry.get(),
+            "transaction_type": self.selected_type,
+            "category": self.ai_category_selc.get(),
+            "amount": float(raw_amount or 0.0),
+            "description": self.ai_enter_description.get("1.0", END).strip(),
+            "entry_method": "Chat Box"
+        }
+
+        print("Saving record verified by user to database:", final_data)
+        Messagebox.show_info("Transaction successfully saved to database!", title="Success")
+        self.clear_form()
+
+    def clear_form(self):
+        self.user_input_entry.delete("1.0", END)
+        self.ai_selected_date.entry.delete(0, END)
+        self.ai_enter_amount.delete(0, END)
+        self.ai_enter_amount.insert(0, "$0.00")
+        self.ai_enter_description.delete("1.0", END)
+        self.ai_category_selc.set("Select a category")
+        self.ai_income_btn.config(bootstyle="secondary")
+        self.ai_expense_btn.config(bootstyle="secondary")
+        self.ai_save_btn.config(state=DISABLED)
+        self.current_parsed_data = None
+        self.selected_type = None
 
     #Cleans and changes display for the left side of the main window
     def clean_pages(self):
