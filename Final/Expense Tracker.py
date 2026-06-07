@@ -141,7 +141,7 @@ class Expense_Tracker_Main:
         #window initialization and theme selection
         self.root = tb.Window(themename="morph")
         self.root.title("Expense Tracker")
-        self.root.geometry("1200x600")
+        self.root.geometry("1200x850")
         self.current_pages = None
         self.transaction_type = "Expense"
         self.current_parsed_data = None
