@@ -14,6 +14,7 @@ from ttkbootstrap.scrolled import ScrolledText
 from ledger import LedgerFrame
 from current_rates import currency_rate as cr
 from parser import parse_natural_language_expense
+from timeframe import apply_custom_range
 
 #Displays Graphs
 class graph_page(tb.Frame):
@@ -21,7 +22,7 @@ class graph_page(tb.Frame):
         super().__init__(parent)
         title = tb.Label(self, text="Analytics")
         title.pack(anchor= "center", pady= 10)
-
+        self._ledger_ref = None
         self.generate_analytics_chart()  
 
     def generate_analytics_chart(self):
@@ -73,7 +74,8 @@ class transaction_page(tb.Frame):
         super().__init__(parent)
         title = tb.Label(self, text="Transactions")
         title.pack(anchor="center", pady=10)
-        LedgerFrame(self).pack(fill=BOTH, expand=YES)
+        self.ledger = LedgerFrame(self)
+        self.ledger.pack(fill=BOTH, expand=YES)
 
 
       
@@ -199,15 +201,15 @@ class Expense_Tracker_Main:
         time_selec_container = tb.Frame(parent_frame)
         time_selec_container.pack(fill= BOTH, pady= 10) 
 
-        #Solomo connect this part to the time frame for budgeting
         screen_text_1 = tb.Label(time_selec_container, text= "Budgeting Timeframe:", font= ("helvetica", 10, "bold" ))
         screen_text_1.pack()
-        from_date = tb.DateEntry(time_selec_container, dateformat="%Y-%m-%d")
-        from_date.pack(side= LEFT)
-        screen_text_2 = tb.Label (time_selec_container, text = "TO", font=("helvetica", 8, "bold"))
-        screen_text_2.pack(side= LEFT)
-        to_date = tb.DateEntry(time_selec_container, dateformat= "%Y-%m-%d")
-        to_date.pack(side=LEFT)
+        self.from_date = tb.DateEntry(time_selec_container, dateformat="%Y-%m-%d")
+        self.from_date.pack(side=LEFT)
+        screen_text_2 = tb.Label(time_selec_container, text="TO", font=("helvetica", 8, "bold"))
+        screen_text_2.pack(side=LEFT)
+        self.to_date = tb.DateEntry(time_selec_container, dateformat="%Y-%m-%d")
+        self.to_date.pack(side=LEFT)
+        tb.Button(time_selec_container, text="Apply", bootstyle="primary", command=lambda: apply_custom_range(self._ledger_ref, self.from_date, self.to_date)).pack(side=LEFT, padx=(8, 0))
 
         
 
@@ -449,7 +451,8 @@ class Expense_Tracker_Main:
         self.clean_pages()
         self.current_pages = transaction_page(self.display_container)
         self.current_pages.pack(fill= BOTH, expand= YES)
-         
+        self._ledger_ref = self.current_pages.ledger
+        
     def load_currencies(self):
         self.clean_pages()
         self.current_pages = currency_page(self.display_container)
