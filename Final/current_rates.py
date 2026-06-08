@@ -1,7 +1,7 @@
 import requests as rq
 
 def currency_rate():
-    url = "https://er-api.com/latest/TWD"
+    url = "https://open.er-api.com/v6/latest/TWD"
 
     try:
         response = rq.get(url, timeout=5)

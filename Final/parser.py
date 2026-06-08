@@ -17,7 +17,7 @@ from HWconfig import get_optimal_gpu_layers
 # Standardized path to model
 #MODEL_PATH = os.path.join(os.path.dirname(__file__), "models", "Qwen2.5-7B-Instruct-Q4_K_M.gguf")
 
-repo_id = "Qwen/Qwen2.5-7B-Instruct-GGUF"
+repo_id = "bartowski/Qwen2.5-7B-Instruct-GGUF"
 model_filename = "Qwen2.5-7B-Instruct-Q4_K_M.gguf"
 
 def find_or_dl_model() -> str:

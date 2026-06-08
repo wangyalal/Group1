@@ -142,7 +142,7 @@ class Expense_Tracker_Main:
         #window initialization and theme selection
         self.root = tb.Window(themename="morph")
         self.root.title("Expense Tracker")
-        self.root.geometry("1200x600")
+        self.root.geometry("1200x850")
         self.current_pages = None
         self.transaction_type = "Expense"
         self.current_parsed_data = None
@@ -161,65 +161,65 @@ class Expense_Tracker_Main:
         self.rightside.pack_propagate(False)
         
         #right side contents
-            #tab section
+            #Notebook Creation Frame
         self.notebook = tb.Notebook(self.rightside, bootstyle="dark")
         self.notebook.pack(expand=True, fill=BOTH)
         self.notebook.configure(width=400)
-
-        style=tb.Style()#Top Tabs
+            #TAB design section
+        style=tb.Style()
         style.configure('TNotebook')
         style.configure('TNotebook.Tab', width=1000, anchor="center")
+            #Creating the different Tabs
+        tab2= tb.Frame(self.notebook)#AI Tab
+        tab1= tb.Frame(self.notebook, height= 50)#Settings TAB
 
-   
-        tab1= tb.Frame(self.notebook, height= 50)#tab one content
-
-        #Date entry section
-        self.selecte_date=tb.DateEntry(tab1, dateformat= "%Y-%m-%d")
-        self.selecte_date.pack(fill="x", pady=10, padx= 30,)
+            #Packing Tabs 
+        self.notebook.add(tab2, text="Add Transaction")
+        self.notebook.add(tab1, text="Settings")
         
-        #amount entry section
-        self.enter_amount = tb.Entry(tab1) #Amount entry field
-        self.enter_amount.insert(0, "$0.00")
-        self.enter_amount.pack(fill="x", pady= 10, padx = 30)
+            #Container within the TABS
+        #Add Transactions Tabs SetUp
+        self.AI_container = tb.Frame(tab2)
+        self.AI_container.pack(fill=BOTH, expand=YES, side=TOP)
+        self.setup_ai_input_section(self.AI_container)
+        self.setup_ai_review_section(self.AI_container)
+        #Settings Tab Setup
+        self.settings_container = tb.Frame(tab1)
+        self.settings_container.pack(fill= BOTH, expand= YES, side= TOP)
+        self.settings_panel(self.settings_container)
 
-        #description sections  
-        self.description_box = ScrolledText(tab1, height = 8) #description entry field
-        self.description_box.insert("1.0", "Enter Description")
-        self.description_box.pack (fill="both", pady=0, padx= 30,)
 
-        #income and expsense type selcetion
-        button_frame = tb.Frame(tab1)
-        button_frame.pack(fill="x", pady= 10, padx= 30)
-        income_btn = tb.Button(button_frame, text= "Income", bootstyle="secondary",
-                            command= lambda: self.set_cat_type("Income", income_btn, expense_btn)) #Set Income as type
-        income_btn.pack(side="left", expand= True, pady=5, padx= (5,0), fill="x")
-        expense_btn = tb.Button(button_frame, text="Expense",bootstyle= "danger", 
-                            command= lambda: self.set_cat_type("Expense", income_btn, expense_btn)) #set Expense as type 
-        expense_btn.pack(side="left", expand= True, pady=5, padx= (5,0), fill="x")   
 
-        #category drop down box
-        self.expense_categories = ["Food", "Rent","Phone","Utilies","Commute","Leasuire","Other"]
-        self.income_categories = ["Salary", "Bonus", "Other"]
-        cat_input_frame= tb.Frame(tab1)
-        cat_input_frame.pack(fill="x", pady=5, padx= 30)
-        self.category_selc=tb.Combobox(cat_input_frame, values=self.expense_categories)
-        self.category_selc.pack(side="left", expand=True, fill= "x")
-        self.category_selc.set("Select a category")
+    def settings_panel(self, parent_frame):
+        header_frame = tb.Frame(parent_frame)
+        header_frame.pack(fill=X, pady= (15,10), padx= 30)
+        frame_title = tb.Label (header_frame, text="Settings Panel", font=("helvetica", 16, "bold"))
+        frame_title.pack()
 
-        add_transaction = tb.Button(tab1, text="Add Transaction", bootstyle="primary") #Add Transaction
-        add_transaction.pack(fill= "x",padx= (30, 25), pady=(15,0) )
+        time_selec_container = tb.Frame(parent_frame)
+        time_selec_container.pack(fill= BOTH, pady= 10) 
 
-        tab2= tb.Frame(self.notebook)#tab two content
-        self.main_container = tb.Frame(tab2)
-        self.main_container.pack(fill=BOTH, expand=YES, side=TOP)
+        #Solomo connect this part to the time frame for budgeting
+        screen_text_1 = tb.Label(time_selec_container, text= "Budgeting Timeframe:", font= ("helvetica", 10, "bold" ))
+        screen_text_1.pack()
+        from_date = tb.DateEntry(time_selec_container, dateformat="%Y-%m-%d")
+        from_date.pack(side= LEFT)
+        screen_text_2 = tb.Label (time_selec_container, text = "TO", font=("helvetica", 8, "bold"))
+        screen_text_2.pack(side= LEFT)
+        to_date = tb.DateEntry(time_selec_container, dateformat= "%Y-%m-%d")
+        to_date.pack(side=LEFT)
 
-        # Setup Integrated Components on AI enabled tab
-        self.setup_ai_input_section(self.main_container)
-        self.setup_ai_review_section(self.main_container)
+        
 
-        #calling both tabs to run
-        self.notebook.add(tab1, text="Manual")
-        self.notebook.add(tab2, text="Chat Box")
+
+    
+        button_container = tb.Frame(parent_frame)
+        button_container.pack()
+        delete_all_button = tb.Button(button_container, text="Delete Database", bootstyle= DANGER, command= "")
+        delete_all_button.pack()
+    
+
+
     
     def setup_ai_input_section(self, parent_frame):
         """Creates the natural language text entry area using a large text box."""
@@ -315,6 +315,8 @@ class Expense_Tracker_Main:
         self.ai_expense_btn.pack(side=LEFT, expand=True, padx=(5, 0), fill=X)   
 
         # 5. Category Selection Dropdown
+        self.expense_categories = ["f", "Rent","Phone","Utilies","Commute","Leasuire","Other"]
+        self.income_categories = ["Salary", "Bonus", "Other"]
         lbl_cat = tb.Label(self.review_frame, text="Category:", font=("Helvetica", 9, "bold"))
         lbl_cat.pack(anchor=W, padx=10, pady=(5, 0))
         
