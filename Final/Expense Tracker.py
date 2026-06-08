@@ -15,6 +15,7 @@ from ledger import LedgerFrame
 from current_rates import currency_rate as cr
 from parser import parse_natural_language_expense
 from timeframe import apply_custom_range
+from transactions import delete_all_data 
 
 #Displays Graphs
 class graph_page(tb.Frame):
@@ -158,7 +159,6 @@ class Expense_Tracker_Main:
     def right_side(self):
         #sets the workspace
         self.rightside = tb.Frame(self.root, width=400, bootstyle="secondary")
-        self.rightside.configure(width= 400)
         self.rightside.pack(side="right", fill="y")
         self.rightside.pack_propagate(False)
         
@@ -166,14 +166,15 @@ class Expense_Tracker_Main:
             #Notebook Creation Frame
         self.notebook = tb.Notebook(self.rightside, bootstyle="dark")
         self.notebook.pack(expand=True, fill=BOTH)
-        self.notebook.configure(width=400)
             #TAB design section
         style=tb.Style()
-        style.configure('TNotebook')
-        style.configure('TNotebook.Tab', width=1000, anchor="center")
+        style.configure('TNotebook.Tab',
+                         width=100, anchor="center",
+                           font = ("Helvetica", 10, "bold"),
+                           padding= (0,25))
             #Creating the different Tabs
-        tab2= tb.Frame(self.notebook)#AI Tab
-        tab1= tb.Frame(self.notebook, height= 50)#Settings TAB
+        tab2= tb.Frame(self.notebook) #AI Tab
+        tab1= tb.Frame(self.notebook, height= 50) #Settings TAB
 
             #Packing Tabs 
         self.notebook.add(tab2, text="Add Transaction")
@@ -195,32 +196,38 @@ class Expense_Tracker_Main:
     def settings_panel(self, parent_frame):
         header_frame = tb.Frame(parent_frame)
         header_frame.pack(fill=X, pady= (15,10), padx= 30)
-        frame_title = tb.Label (header_frame, text="Settings Panel", font=("helvetica", 16, "bold"))
-        frame_title.pack()
 
         time_selec_container = tb.Frame(parent_frame)
         time_selec_container.pack(fill= BOTH, pady= 10) 
 
-        screen_text_1 = tb.Label(time_selec_container, text= "Budgeting Timeframe:", font= ("helvetica", 10, "bold" ))
-        screen_text_1.pack()
+        screen_text_1 = tb.Label(time_selec_container, text= "Budgeting Timeframe:", font= ("helvetica", 12, "bold"))
+        screen_text_1.pack(side =  TOP, padx= (0,15), anchor= W)
+        screen_text_2 = tb.Label(time_selec_container, text= "FROM:", font= ("helvetica", 10, "bold"))
+        screen_text_2.pack(side=TOP)        
         self.from_date = tb.DateEntry(time_selec_container, dateformat="%Y-%m-%d")
-        self.from_date.pack(side=LEFT)
-        screen_text_2 = tb.Label(time_selec_container, text="TO", font=("helvetica", 8, "bold"))
-        screen_text_2.pack(side=LEFT)
+        self.from_date.pack(side=TOP, fill= X, padx= 10)
+        screen_text_3 = tb.Label(time_selec_container, text="TO:", font =("helvetica", 10, "bold"))
+        screen_text_3.pack(side=TOP, padx= (5))
         self.to_date = tb.DateEntry(time_selec_container, dateformat="%Y-%m-%d")
-        self.to_date.pack(side=LEFT)
-        tb.Button(time_selec_container, text="Apply", bootstyle="primary", command=lambda: apply_custom_range(self._ledger_ref, self.from_date, self.to_date)).pack(side=LEFT, padx=(8, 0))
+        self.to_date.pack(side=TOP, fill= X, padx= 10)
+        tb.Button(time_selec_container, text="Apply", bootstyle="primary", 
+        command=lambda: apply_custom_range(self._ledger_ref, self.from_date, self.to_date)).pack(side=TOP, fill= X ,padx=(10), pady= 10)
+      
 
-        
-
-
-    
+        #Removes everything from the data base
         button_container = tb.Frame(parent_frame)
-        button_container.pack()
-        delete_all_button = tb.Button(button_container, text="Delete Database", bootstyle= DANGER, command= "")
-        delete_all_button.pack()
+        button_container.pack(pady=(50, 10))
+        delete_all_button = tb.Button(button_container, text="Delete Database", bootstyle= DANGER, command=self.confirm_selection)
+        delete_all_button.pack(side= TOP, fill= X, padx= 10)
     
+    def confirm_selection(self):
+        answer = Messagebox.yesno(
+        title = "Confirm Selections",
+        message= "Are you sure you want to erase everything",
+        parent = self.root)
 
+        if answer == "Yes":
+            delete_all_data()
 
     
     def setup_ai_input_section(self, parent_frame):
