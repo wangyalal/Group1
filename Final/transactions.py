@@ -204,3 +204,21 @@ def get_expense_report_by_category():
     conn.close()
 
     return report
+
+def delete_all_data():
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    try:
+        query = "TRUNCATE TABLE transactions, categories RESTART IDENTITY CASCADE;"
+        
+        cursor.execute(query)
+        conn.commit()
+        print("Database wiped successfully.")
+        return True
+    except Exception as e:
+        conn.rollback() 
+        print(f"Error wiping database: {e}")
+        return False
+    finally:
+        cursor.close()
+        conn.close()
