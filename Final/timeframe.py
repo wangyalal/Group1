@@ -92,13 +92,13 @@ def apply_custom_range(ledger, from_date_entry, to_date_entry):
     return True
     
 def apply_cycle_day(ledger, cycle_day_var):
+    try:
         day = max(1, min(int(cycle_day_var.get()), 28))
     except ValueError:
         day = 1
     if ledger is not None:
         ledger._cycle_start_day = day
         ledger._refresh()
-        
 PRESETS = [
     "This Month",
     "Last Month",
