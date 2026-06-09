@@ -90,7 +90,22 @@ def apply_custom_range(ledger, from_date_entry, to_date_entry):
     if ledger is not None:
         ledger.set_custom_range(start, end)
     return True
-
+    
+def apply_cycle_day(ledger, cycle_day_var):
+    """
+    Reads the cycle day spinbox variable, validates it,
+    and applies it to the given LedgerFrame.
+    Call this from the settings panel.
+    """
+    try:
+        day = max(1, min(int(cycle_day_var.get()), 28))
+    except ValueError:
+        day = 1
+    if ledger is not None:
+        ledger._cycle_start_day = day
+        ledger._day_var.set(day)
+        ledger._refresh()
+        
 PRESETS = [
     "This Month",
     "Last Month",
