@@ -98,7 +98,6 @@ def apply_cycle_day(ledger, cycle_day_var):
         day = 1
     if ledger is not None:
         ledger._cycle_start_day = day
-        ledger._day_var.set(day)
         ledger._refresh()
 PRESETS = [
     "This Month",
