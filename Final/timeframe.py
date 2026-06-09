@@ -92,12 +92,6 @@ def apply_custom_range(ledger, from_date_entry, to_date_entry):
     return True
     
 def apply_cycle_day(ledger, cycle_day_var):
-    """
-    Reads the cycle day spinbox variable, validates it,
-    and applies it to the given LedgerFrame.
-    Call this from the settings panel.
-    """
-    try:
         day = max(1, min(int(cycle_day_var.get()), 28))
     except ValueError:
         day = 1
