@@ -1,3 +1,4 @@
 #ignore locally downloaded Qwen model folder
 **/models/
 *.gguf
+__pycache__/
