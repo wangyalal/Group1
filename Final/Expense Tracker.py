@@ -425,17 +425,13 @@ class Expense_Tracker_Main:
     def save_to_database(self):
         raw_amount = self.ai_enter_amount.get().replace("$", "")
         
-        final_data = {
-            "transaction_date": self.ai_selected_date.entry.get(),
-            "transaction_type": self.selected_type,
-            "category": self.ai_category_selc.get(),
-            "amount": float(raw_amount or 0.0),
-            "description": self.ai_enter_description.get("1.0", END).strip(),
-            "entry_method": "Chat Box"
-        }
-
-        print("Saving record verified by user to database:", final_data)
-        Messagebox.show_info("Transaction successfully saved to database!", title="Success")
+        save=tx.add_transaction(self.ai_selected_date.entry.get(),
+                                float(raw_amount or 0.0),
+                                self.ai_enter_description.get("1.0", END).strip(),
+                                self.selected_type,
+                                self.ai_category_selc.get())
+        if save:
+            Messagebox.show_info("Transaction successfully saved to database!", title="Success")
         self.clear_form()
 
     def clear_form(self):
