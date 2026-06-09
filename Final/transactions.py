@@ -19,36 +19,9 @@ def validate_amount(amount):
     return amount
 
 
-def add_income(transaction_date, amount, description, category_name="Income"):
+def add_transaction(transaction_date, amount, description, tx_type, category):
     """
-    Adds an income transaction to the database.
-    Example: stipend, salary, allowance.
-    """
-
-    if transaction_date == "" or transaction_date is None:
-        transaction_date = date.today()
-
-    amount = validate_amount(amount)
-
-    if description is None or description.strip() == "":
-        raise ValueError("Description cannot be empty.")
-
-    insert_transaction(
-        date=transaction_date,
-        amount=amount,
-        description=description.strip(),
-        tx_type="Income",
-        entry_method="Manual",
-        category_name=category_name
-    )
-
-    return "Income added successfully."
-
-
-def add_expense(transaction_date, amount, description, category_name="Expense"):
-    """
-    Adds an expense transaction to the database.
-    Example: food, transport, rent, shopping.
+    Adds a transaction of either type Income or Expense, along with respective category of trans type
     """
 
     if transaction_date == "" or transaction_date is None:
@@ -60,15 +33,14 @@ def add_expense(transaction_date, amount, description, category_name="Expense"):
         raise ValueError("Description cannot be empty.")
 
     insert_transaction(
-        date=transaction_date,
-        amount=amount,
+        transaction_date,
+        amount,
         description=description.strip(),
-        tx_type="Expense",
-        entry_method="Manual",
-        category_name=category_name
+        tx_type=tx_type,
+        category=category
     )
 
-    return "Expense added successfully."
+    return "Transaction added successfully."
 
 
 def get_all_transactions():
