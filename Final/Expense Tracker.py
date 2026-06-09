@@ -16,6 +16,7 @@ from current_rates import currency_rate as cr
 from parser import parse_natural_language_expense
 from timeframe import apply_custom_range
 from transactions import delete_all_data 
+from timeframe import apply_cycle_day
 
 
 #Displays Graphs
@@ -198,30 +199,37 @@ class Expense_Tracker_Main:
         header_frame = tb.Frame(parent_frame)
         header_frame.pack(fill=X, pady= (15,10), padx= 30)
 
+            #container buttons rollover layout
         time_selec_container = tb.Frame(parent_frame)
         time_selec_container.pack(fill= BOTH, pady= 10) 
 
         screen_text_1 = tb.Label(time_selec_container, text= "Budgeting Timeframe:", font= ("helvetica", 12, "bold"))
         screen_text_1.pack(side =  TOP, padx= (0,15), anchor= W)
+
         screen_text_2 = tb.Label(time_selec_container, text= "Enter Budget Rollover Date (1st-28th)",
-                                  font= ("helvetica", 10, "bold"))
+                                  font= ("helvetica", 10))
         screen_text_2.pack(side= TOP,)
-        budget_rollover = tb.Entry(parent_frame)
-        budget_rollover.pack(padx= 50)
+        rollover_date = tb.StringVar()
+        budget_rollover = tb.Entry(time_selec_container, textvariable= rollover_date)
+        budget_rollover.pack(side= TOP, padx= 50, anchor= CENTER, pady= 5)
 
-
-        tb.Button(time_selec_container, text="Apply", bootstyle="primary", 
-        command= "")
+        confirm_rollover = tb.Button(time_selec_container, text= "Confirm", command= lambda: self.confirm_date(rollover_date), bootstyle="primary")
+        confirm_rollover.pack(side= TOP, fill= X, padx= 10)
       
 
-        #Removes everything from the data base
+        #continer for database layout
         button_container = tb.Frame(parent_frame)
-        button_container.pack(pady=(50, 10))
-        screen_text_3 = tb.Label(button_container, text = "Delete all data in the Databse:")
-        delete_all_button = tb.Button(button_container, text="Delete All", bootstyle= DANGER, command=self.confirm_selection)
+        button_container.pack(fill=BOTH, pady= 40)
+        screen_text_3 = tb.Label(button_container, text = "Delete all data in the Databse:", font= ("helvetica", 12, "bold"))
+        screen_text_3.pack(side= TOP, anchor= "w")
+        delete_all_button = tb.Button(button_container, text="Delete All", bootstyle= DANGER, command=self.confirm_deletion)
         delete_all_button.pack(side= TOP, fill= X, padx= 10)
     
-    def confirm_selection(self):
+    def confirm_date (self, date): 
+        apply_cycle_day(self, date)
+
+
+    def confirm_deletion(self):
         answer = Messagebox.yesno(
         title = "Confirm Selections",
         message= "Are you sure you want to erase everything",
