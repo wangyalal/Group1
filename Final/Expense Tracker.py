@@ -17,6 +17,7 @@ from parser import parse_natural_language_expense
 from timeframe import apply_custom_range
 from transactions import delete_all_data 
 
+
 #Displays Graphs
 class graph_page(tb.Frame):
     def __init__(self, parent): 
@@ -67,7 +68,7 @@ class graph_page(tb.Frame):
             canvas_widget = canvas.get_tk_widget()
             canvas_widget.pack(fill="both", expand=True, padx=10, pady=10)
             canvas.draw()    
-            self.generate_analytics_chart()     
+            self.generate_analytics_chart()  
 
 #displays Transtion history
 class transaction_page(tb.Frame):
@@ -202,22 +203,22 @@ class Expense_Tracker_Main:
 
         screen_text_1 = tb.Label(time_selec_container, text= "Budgeting Timeframe:", font= ("helvetica", 12, "bold"))
         screen_text_1.pack(side =  TOP, padx= (0,15), anchor= W)
-        screen_text_2 = tb.Label(time_selec_container, text= "FROM:", font= ("helvetica", 10, "bold"))
-        screen_text_2.pack(side=TOP)        
-        self.from_date = tb.DateEntry(time_selec_container, dateformat="%Y-%m-%d")
-        self.from_date.pack(side=TOP, fill= X, padx= 10)
-        screen_text_3 = tb.Label(time_selec_container, text="TO:", font =("helvetica", 10, "bold"))
-        screen_text_3.pack(side=TOP, padx= (5))
-        self.to_date = tb.DateEntry(time_selec_container, dateformat="%Y-%m-%d")
-        self.to_date.pack(side=TOP, fill= X, padx= 10)
+        screen_text_2 = tb.Label(time_selec_container, text= "Enter Budget Rollover Date (1st-28th)",
+                                  font= ("helvetica", 10, "bold"))
+        screen_text_2.pack(side= TOP,)
+        budget_rollover = tb.Entry(parent_frame)
+        budget_rollover.pack(padx= 50)
+
+
         tb.Button(time_selec_container, text="Apply", bootstyle="primary", 
-        command=lambda: apply_custom_range(self._ledger_ref, self.from_date, self.to_date)).pack(side=TOP, fill= X ,padx=(10), pady= 10)
+        command= "")
       
 
         #Removes everything from the data base
         button_container = tb.Frame(parent_frame)
         button_container.pack(pady=(50, 10))
-        delete_all_button = tb.Button(button_container, text="Delete Database", bootstyle= DANGER, command=self.confirm_selection)
+        screen_text_3 = tb.Label(button_container, text = "Delete all data in the Databse:")
+        delete_all_button = tb.Button(button_container, text="Delete All", bootstyle= DANGER, command=self.confirm_selection)
         delete_all_button.pack(side= TOP, fill= X, padx= 10)
     
     def confirm_selection(self):
@@ -343,7 +344,7 @@ class Expense_Tracker_Main:
         self.ai_clear_btn = tb.Button(action_frame, text="Clear", bootstyle=SECONDARY, command=self.clear_form)
         self.ai_clear_btn.pack(side=RIGHT, padx=(0, 5))
 
-    # --- AI CORE LOGIC HANDLERS ---
+            #AI CORE LOGIC HANDLERS
 
     def set_review_type(self, trans_type):
         self.selected_type = trans_type
@@ -512,46 +513,3 @@ class Expense_Tracker_Main:
 if  __name__ == "__main__":
     app = Expense_Tracker_Main()
     app.run()
-
-    
-def generate_analytics_chart(self):
-        try:
-            tx_data = tx.get_all_transactions()
-        except Exception as e:
-            print(f"Error fetching chart data: {e}")
-            return
-
-        df = pd.DataFrame(tx_data, columns=['Date', 'Description', 'Category', 'Amount', 'Type', 'Method'])
-        df['Amount'] = df['Amount'].apply(lambda x: abs(float(x)))
-        expenses_df = df[df['Type'] == 'Expense']
-        final_data = expenses_df.groupby('Category')['Amount'].sum().sort_values(ascending=False)
-        
-        if final_data.empty:
-            return
-
-        fig, ax = plt.subplots(figsize=(6, 4), dpi=100)
-        modern_colors = ['#2962FF', '#00C853', '#FFAB40', '#4DD0E1', '#FDD835', '#AA00FF']
-        
-        ax.pie(
-            final_data, 
-            labels=final_data.index, 
-            colors=modern_colors, 
-            autopct='%1.1f%%', 
-            startangle=90, 
-            wedgeprops={'linewidth': 1.5, 'edgecolor': 'white'},
-            textprops={'color': 'black', 'fontweight': 'bold', 'fontsize': 10},
-            pctdistance=0.8
-        )
-        
-        ax.set_title("Expenditure Breakdown by Category", fontsize=12, fontweight='bold', pad=15)
-        ax.axis('equal') 
-        ax.legend(title="Categories", labels=final_data.index, loc="best", fontsize=9)
-        fig.tight_layout()
-
-        for widget in self.winfo_children():
-            widget.destroy()
-
-        canvas = FigureCanvasTkAgg(fig, master=self)
-        canvas_widget = canvas.get_tk_widget()
-        canvas_widget.pack(fill="both", expand=True, padx=10, pady=10)
-        canvas.draw()
