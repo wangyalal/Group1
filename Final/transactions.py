@@ -38,10 +38,9 @@ def add_transaction(transaction_date, amount, description, tx_type, entry_method
     insert_transaction(
         transaction_date,
         amount,
-        description=description.strip(),
-        tx_type=tx_type,
-        entry_method=entry_method,
-        category=category
+        description.strip(),
+        tx_type,
+        category
     )
 
     return "Transaction added successfully."
