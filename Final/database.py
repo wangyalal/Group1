@@ -10,7 +10,12 @@ def get_db_connection():
         port="5432"
     )
 
-def insert_transaction(date, amount, description, tx_type, entry_method, category_name="Expense"):
+def insert_transaction(date, amount, description, tx_type, entry_method, category_name):
+    category_name = category_name.strip() if category_name else ""
+    if not category_name:
+        print("Database insertion rejected: Category cannot be empty!")
+        return False
+
     conn = get_db_connection()
     cursor = conn.cursor()
     
