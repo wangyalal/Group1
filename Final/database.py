@@ -10,7 +10,7 @@ def get_db_connection():
         port="5432"
     )
 
-def insert_transaction(date, amount, description, tx_type, entry_method, category):
+def insert_transaction(date, amount, description, tx_type, category):
     category = category.strip() if category else "Other"
     if not category:
         print("Database insertion error: Category cannot be empty!")
@@ -25,10 +25,10 @@ def insert_transaction(date, amount, description, tx_type, entry_method, categor
         
         
         query = """
-            INSERT INTO transactions (transaction_date, amount, description, transaction_type, entry_method, category_id)
-            VALUES (%s, %s, %s, %s, %s, %s);
+            INSERT INTO transactions (transaction_date, amount, description, transaction_type, category_name)
+            VALUES (%s, %s, %s, %s, %s);
         """
-        cursor.execute(query, (date, Decimal(str(amount)), description, tx_type, entry_method, category_id))
+        cursor.execute(query, (date, Decimal(str(amount)), description, tx_type, category))
         conn.commit()
         print("Transaction safely added to database!")
     except Exception as e:
