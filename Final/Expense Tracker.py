@@ -436,6 +436,7 @@ def confirm_date(self, date):
                                 float(raw_amount or 0.0),
                                 self.ai_enter_description.get("1.0", END).strip(),
                                 self.selected_type,
+                                "Chat Box", #
                                 self.ai_category_selc.get())
         if save:
             Messagebox.show_info("Transaction successfully saved to database!", title="Success")
@@ -543,3 +544,4 @@ def confirm_date(self, date):
 if  __name__ == "__main__":
     app = Expense_Tracker_Main()
     app.run()
+
