@@ -223,9 +223,10 @@ class Expense_Tracker_Main:
         delete_all_button = tb.Button(button_container, text="Delete All", bootstyle= DANGER, command=self.confirm_deletion)
         delete_all_button.pack(side= TOP, fill= X, padx= 10)
     
-    def confirm_date (self, date): 
-        apply_cycle_day(self, date)
-
+def confirm_date(self, date):
+    apply_cycle_day(self._ledger_ref, date)
+    day = self._ledger_ref._cycle_start_day
+    #to take the current date that is set
 
     def confirm_deletion(self):
         answer = Messagebox.yesno(
