@@ -331,8 +331,8 @@ class Expense_Tracker_Main:
         self.ai_expense_btn.pack(side=LEFT, expand=True, padx=(5, 0), fill=X)   
 
         # 5. Category Selection Dropdown
-        self.expense_categories = ["f", "Rent","Phone","Utilies","Commute","Leasuire","Other"]
-        self.income_categories = ["Salary", "Bonus", "Other"]
+        self.expense_categories = ["Food", "Rent","Phone","Utilies","Commute","Leasuire","Other"]
+        self.income_categories = ["Salary", "Bonus", "Freelance/Side-gig", "Investments/Interest", "Other"]
         lbl_cat = tb.Label(self.review_frame, text="Category:", font=("Helvetica", 9, "bold"))
         lbl_cat.pack(anchor=W, padx=10, pady=(5, 0))
         
@@ -350,6 +350,11 @@ class Expense_Tracker_Main:
         self.ai_clear_btn = tb.Button(action_frame, text="Clear", bootstyle=SECONDARY, command=self.clear_form)
         self.ai_clear_btn.pack(side=RIGHT, padx=(0, 5))
 
+        #validation function input bindings
+        self.ai_selected_date.bind("<FocusOut>", lambda e: self.validate_form())
+        self.ai_enter_amount.bind("<KeyRelease>", lambda e: self.validate_form())
+        self.ai_enter_description.bind("<KeyRelease>", lambda e: self.validate_form())
+        self.ai_category_selc.bind("<<ComboboxSelected>>", lambda e: self.validate_form())
             #AI CORE LOGIC HANDLERS
 
     def set_review_type(self, trans_type):
@@ -362,6 +367,7 @@ class Expense_Tracker_Main:
             self.ai_income_btn.config(bootstyle="secondary")
             self.ai_expense_btn.config(bootstyle="danger")
             self.ai_category_selc.config(values=self.expense_categories)
+        self.validate_form()
 
     def trigger_parsing_from_entry(self):
         self.start_parsing_thread()
@@ -414,7 +420,7 @@ class Expense_Tracker_Main:
         parsed_cat = data.get("category", "Other")
         self.ai_category_selc.set(parsed_cat)
 
-        self.ai_save_btn.config(state=NORMAL)
+        self.validate_form()
 
     def on_parsing_failure(self, error_msg):
         self.progress_bar.stop()
@@ -433,6 +439,27 @@ class Expense_Tracker_Main:
         if save:
             Messagebox.show_info("Transaction successfully saved to database!", title="Success")
         self.clear_form()
+
+    def validate_form(self):
+        try:
+            date_val = self.ai_selected_date.entry.get()
+            datetime.strptime(date_val, "%Y-%m-%d")
+            date_ok= True
+        except ValueError:
+            date_ok = False
+
+        try:
+            amount_val = float(self.ai_enter_amount.get().replace("$",""))
+            amt_ok = amount_val > 0
+        except ValueError:
+            amt_ok = False
+
+        type_ok = getattr(self, "selected_type", None) is not None
+        category_val = self.ai_category_selc.get()
+        cat_ok = category_val and category_val != "Select a category"
+
+        valid = date_ok and amt_ok and type_ok and cat_ok
+        self.ai_save_btn.config(state=NORMAL if valid else DISABLED)
 
     def clear_form(self):
         self.user_input_entry.delete("1.0", END)
