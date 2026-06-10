@@ -224,7 +224,7 @@ class Expense_Tracker_Main:
         delete_all_button.pack(side= TOP, fill= X, padx= 10)
     
     def confirm_date (self, date): 
-        apply_cycle_day(self, date)
+        apply_cycle_day(self.ledger, date)
 
 
     def confirm_deletion(self):
