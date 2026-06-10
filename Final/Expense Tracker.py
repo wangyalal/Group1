@@ -226,7 +226,7 @@ class Expense_Tracker_Main:
 def confirm_date(self, date):
     apply_cycle_day(self._ledger_ref, date)
     day = self._ledger_ref._cycle_start_day
-    #to take the current date that is set
+    #to take the current date that is currently set
 
     def confirm_deletion(self):
         answer = Messagebox.yesno(
