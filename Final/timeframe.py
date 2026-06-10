@@ -77,8 +77,28 @@ def get_ledger_for_period(preset: str = "This Month",
     }
 
     return transactions, summary, start, end
-
-
+                              
+def apply_custom_range(ledger, from_date_entry, to_date_entry):
+    try:
+        start = date.fromisoformat(from_date_entry.entry.get())
+        end   = date.fromisoformat(to_date_entry.entry.get())
+        if start > end:
+            raise ValueError("From date must be before To date.")
+    except ValueError as e:
+        print(f"Date range error: {e}")
+        return False
+    if ledger is not None:
+        ledger.set_custom_range(start, end)
+    return True
+    
+def apply_cycle_day(ledger, cycle_day_var):
+    try:
+        day = max(1, min(int(cycle_day_var.get()), 28))
+    except ValueError:
+        day = 1
+    if ledger is not None:
+        ledger._cycle_start_day = day
+        ledger._refresh()
 PRESETS = [
     "This Month",
     "Last Month",

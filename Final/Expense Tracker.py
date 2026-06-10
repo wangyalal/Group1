@@ -14,6 +14,10 @@ from ttkbootstrap.scrolled import ScrolledText
 from ledger import LedgerFrame
 from current_rates import currency_rate as cr
 from parser import parse_natural_language_expense
+from timeframe import apply_custom_range
+from transactions import delete_all_data 
+from timeframe import apply_cycle_day
+
 
 #Displays Graphs
 class graph_page(tb.Frame):
@@ -21,7 +25,7 @@ class graph_page(tb.Frame):
         super().__init__(parent)
         title = tb.Label(self, text="Analytics")
         title.pack(anchor= "center", pady= 10)
-
+        self._ledger_ref = None
         self.generate_analytics_chart()  
 
     def generate_analytics_chart(self):
@@ -60,11 +64,10 @@ class graph_page(tb.Frame):
 
             for widget in self.winfo_children():
                 widget.destroy()
-
             canvas = FigureCanvasTkAgg(fig, master=self)
             canvas_widget = canvas.get_tk_widget()
             canvas_widget.pack(fill="both", expand=True, padx=10, pady=10)
-            canvas.draw()    
+            canvas.draw()
 
 #displays Transtion history
 class transaction_page(tb.Frame):
@@ -72,7 +75,8 @@ class transaction_page(tb.Frame):
         super().__init__(parent)
         title = tb.Label(self, text="Transactions")
         title.pack(anchor="center", pady=10)
-        LedgerFrame(self).pack(fill=BOTH, expand=YES)
+        self.ledger = LedgerFrame(self)
+        self.ledger.pack(fill=BOTH, expand=YES)
 
 
       
@@ -141,7 +145,7 @@ class Expense_Tracker_Main:
         #window initialization and theme selection
         self.root = tb.Window(themename="morph")
         self.root.title("Expense Tracker")
-        self.root.geometry("1200x600")
+        self.root.geometry("1200x850")
         self.current_pages = None
         self.transaction_type = "Expense"
         self.current_parsed_data = None
@@ -155,70 +159,83 @@ class Expense_Tracker_Main:
     def right_side(self):
         #sets the workspace
         self.rightside = tb.Frame(self.root, width=400, bootstyle="secondary")
-        self.rightside.configure(width= 400)
         self.rightside.pack(side="right", fill="y")
         self.rightside.pack_propagate(False)
         
         #right side contents
-            #tab section
+            #Notebook Creation Frame
         self.notebook = tb.Notebook(self.rightside, bootstyle="dark")
         self.notebook.pack(expand=True, fill=BOTH)
-        self.notebook.configure(width=400)
+            #TAB design section
+        style=tb.Style()
+        style.configure('TNotebook.Tab',
+                         width=100, anchor="center",
+                           font = ("Helvetica", 10, "bold"),
+                           padding= (0,25))
+            #Creating the different Tabs
+        tab2= tb.Frame(self.notebook) #AI Tab
+        tab1= tb.Frame(self.notebook, height= 50) #Settings TAB
 
-        style=tb.Style()#Top Tabs
-        style.configure('TNotebook')
-        style.configure('TNotebook.Tab', width=1000, anchor="center")
-
-   
-        tab1= tb.Frame(self.notebook, height= 50)#tab one content
-
-        #Date entry section
-        self.selecte_date=tb.DateEntry(tab1, dateformat= "%Y-%m-%d")
-        self.selecte_date.pack(fill="x", pady=10, padx= 30,)
+            #Packing Tabs 
+        self.notebook.add(tab2, text="Add Transaction")
+        self.notebook.add(tab1, text="Settings")
         
-        #amount entry section
-        self.enter_amount = tb.Entry(tab1) #Amount entry field
-        self.enter_amount.insert(0, "$0.00")
-        self.enter_amount.pack(fill="x", pady= 10, padx = 30)
+            #Container within the TABS
+        #Add Transactions Tabs SetUp
+        self.AI_container = tb.Frame(tab2)
+        self.AI_container.pack(fill=BOTH, expand=YES, side=TOP)
+        self.setup_ai_input_section(self.AI_container)
+        self.setup_ai_review_section(self.AI_container)
+        #Settings Tab Setup
+        self.settings_container = tb.Frame(tab1)
+        self.settings_container.pack(fill= BOTH, expand= YES, side= TOP)
+        self.settings_panel(self.settings_container)
 
-        #description sections  
-        self.description_box = ScrolledText(tab1, height = 8) #description entry field
-        self.description_box.insert("1.0", "Enter Description")
-        self.description_box.pack (fill="both", pady=0, padx= 30,)
 
-        #income and expsense type selcetion
-        button_frame = tb.Frame(tab1)
-        button_frame.pack(fill="x", pady= 10, padx= 30)
-        income_btn = tb.Button(button_frame, text= "Income", bootstyle="secondary",
-                            command= lambda: self.set_cat_type("Income", income_btn, expense_btn)) #Set Income as type
-        income_btn.pack(side="left", expand= True, pady=5, padx= (5,0), fill="x")
-        expense_btn = tb.Button(button_frame, text="Expense",bootstyle= "danger", 
-                            command= lambda: self.set_cat_type("Expense", income_btn, expense_btn)) #set Expense as type 
-        expense_btn.pack(side="left", expand= True, pady=5, padx= (5,0), fill="x")   
 
-        #category drop down box
-        self.expense_categories = ["Food", "Rent","Phone","Utilies","Commute","Leasuire","Other"]
-        self.income_categories = ["Salary", "Bonus", "Other"]
-        cat_input_frame= tb.Frame(tab1)
-        cat_input_frame.pack(fill="x", pady=5, padx= 30)
-        self.category_selc=tb.Combobox(cat_input_frame, values=self.expense_categories)
-        self.category_selc.pack(side="left", expand=True, fill= "x")
-        self.category_selc.set("Select a category")
+    def settings_panel(self, parent_frame):
+        header_frame = tb.Frame(parent_frame)
+        header_frame.pack(fill=X, pady= (15,10), padx= 30)
 
-        add_transaction = tb.Button(tab1, text="Add Transaction", bootstyle="primary") #Add Transaction
-        add_transaction.pack(fill= "x",padx= (30, 25), pady=(15,0) )
+            #container buttons rollover layout
+        time_selec_container = tb.Frame(parent_frame)
+        time_selec_container.pack(fill= BOTH, pady= 10) 
 
-        tab2= tb.Frame(self.notebook)#tab two content
-        self.main_container = tb.Frame(tab2)
-        self.main_container.pack(fill=BOTH, expand=YES, side=TOP)
+        screen_text_1 = tb.Label(time_selec_container, text= "Budgeting Timeframe:", font= ("helvetica", 12, "bold"))
+        screen_text_1.pack(side =  TOP, padx= (0,15), anchor= W)
 
-        # Setup Integrated Components on AI enabled tab
-        self.setup_ai_input_section(self.main_container)
-        self.setup_ai_review_section(self.main_container)
+        screen_text_2 = tb.Label(time_selec_container, text= "Enter Budget Rollover Date (1st-28th)",
+                                  font= ("helvetica", 10))
+        screen_text_2.pack(side= TOP,)
+        rollover_date = tb.StringVar()
+        budget_rollover = tb.Entry(time_selec_container, textvariable= rollover_date)
+        budget_rollover.pack(side= TOP, padx= 50, anchor= CENTER, pady= 5)
 
-        #calling both tabs to run
-        self.notebook.add(tab1, text="Manual")
-        self.notebook.add(tab2, text="Chat Box")
+        confirm_rollover = tb.Button(time_selec_container, text= "Confirm", command= lambda: self.confirm_date(rollover_date), bootstyle="primary")
+        confirm_rollover.pack(side= TOP, fill= X, padx= 10)
+      
+
+        #continer for database layout
+        button_container = tb.Frame(parent_frame)
+        button_container.pack(fill=BOTH, pady= 40)
+        screen_text_3 = tb.Label(button_container, text = "Delete all data in the Databse:", font= ("helvetica", 12, "bold"))
+        screen_text_3.pack(side= TOP, anchor= "w")
+        delete_all_button = tb.Button(button_container, text="Delete All", bootstyle= DANGER, command=self.confirm_deletion)
+        delete_all_button.pack(side= TOP, fill= X, padx= 10)
+    
+    def confirm_date (self, date): 
+        apply_cycle_day(self, date)
+
+
+    def confirm_deletion(self):
+        answer = Messagebox.yesno(
+        title = "Confirm Selections",
+        message= "Are you sure you want to erase everything",
+        parent = self.root)
+
+        if answer == "Yes":
+            delete_all_data()
+
     
     def setup_ai_input_section(self, parent_frame):
         """Creates the natural language text entry area using a large text box."""
@@ -314,6 +331,8 @@ class Expense_Tracker_Main:
         self.ai_expense_btn.pack(side=LEFT, expand=True, padx=(5, 0), fill=X)   
 
         # 5. Category Selection Dropdown
+        self.expense_categories = ["f", "Rent","Phone","Utilies","Commute","Leasuire","Other"]
+        self.income_categories = ["Salary", "Bonus", "Other"]
         lbl_cat = tb.Label(self.review_frame, text="Category:", font=("Helvetica", 9, "bold"))
         lbl_cat.pack(anchor=W, padx=10, pady=(5, 0))
         
@@ -331,7 +350,7 @@ class Expense_Tracker_Main:
         self.ai_clear_btn = tb.Button(action_frame, text="Clear", bootstyle=SECONDARY, command=self.clear_form)
         self.ai_clear_btn.pack(side=RIGHT, padx=(0, 5))
 
-    # --- AI CORE LOGIC HANDLERS ---
+            #AI CORE LOGIC HANDLERS
 
     def set_review_type(self, trans_type):
         self.selected_type = trans_type
@@ -406,17 +425,13 @@ class Expense_Tracker_Main:
     def save_to_database(self):
         raw_amount = self.ai_enter_amount.get().replace("$", "")
         
-        final_data = {
-            "transaction_date": self.ai_selected_date.entry.get(),
-            "transaction_type": self.selected_type,
-            "category": self.ai_category_selc.get(),
-            "amount": float(raw_amount or 0.0),
-            "description": self.ai_enter_description.get("1.0", END).strip(),
-            "entry_method": "Chat Box"
-        }
-
-        print("Saving record verified by user to database:", final_data)
-        Messagebox.show_info("Transaction successfully saved to database!", title="Success")
+        save=tx.add_transaction(self.ai_selected_date.entry.get(),
+                                float(raw_amount or 0.0),
+                                self.ai_enter_description.get("1.0", END).strip(),
+                                self.selected_type,
+                                self.ai_category_selc.get())
+        if save:
+            Messagebox.show_info("Transaction successfully saved to database!", title="Success")
         self.clear_form()
 
     def clear_form(self):
@@ -446,7 +461,8 @@ class Expense_Tracker_Main:
         self.clean_pages()
         self.current_pages = transaction_page(self.display_container)
         self.current_pages.pack(fill= BOTH, expand= YES)
-         
+        self._ledger_ref = self.current_pages.ledger
+        
     def load_currencies(self):
         self.clean_pages()
         self.current_pages = currency_page(self.display_container)
@@ -499,5 +515,3 @@ class Expense_Tracker_Main:
 if  __name__ == "__main__":
     app = Expense_Tracker_Main()
     app.run()
-
-    
