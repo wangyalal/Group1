@@ -209,11 +209,11 @@ class LedgerFrame(tb.Frame):
 
     def _build_controls(self):
         bar = tb.Frame(self)
-        bar.pack(fill="x", padx=20, pady=(10, 4))
+        bar.pack(padx=20, pady=(10, 4), anchor= "center")
 
         for preset in self._BUTTON_PRESETS:
             btn = tb.Button(
-                bar, text=preset, width=10,
+                bar, text=preset, width=12,
                 bootstyle="primary" if preset == self._preset else "outline-secondary",
                 command=lambda p=preset: self._set_preset(p),
             )
@@ -272,7 +272,7 @@ class LedgerFrame(tb.Frame):
             ("Total Income",   f"+${summary['total_income']:,.2f}",   "success"),
             ("Total Expenses", f"-${summary['total_expenses']:,.2f}", "danger"),
             (
-                "Net Balance",
+                "Net Balance:",
                 f"{'+' if summary['net'] >= 0 else ''}${summary['net']:,.2f}",
                 "success" if summary["net"] >= 0 else "danger",
             ),
@@ -281,13 +281,23 @@ class LedgerFrame(tb.Frame):
         for i, (label, value, style) in enumerate(cards):
             card = tb.Frame(card_row, bootstyle="secondary", padding=12)
             card.pack(side="left", expand=True, fill="x", padx=6)
-            tb.Label(card, text=label, font=("Helvetica", 9),
-                     bootstyle="secondary").pack(anchor="w")
-            tb.Label(card, text=value, font=("Helvetica", 18, "bold"),
-                     bootstyle=style).pack(anchor="w")
+
             if i == 2:
-                tb.Label(card, text=summary["status"], font=("Helvetica", 9),
+                label_row = tb.Frame(card, bootstyle="secondary")
+                label_row.pack(fill="x", anchor="w")
+                
+                tb.Label(label_row, text=label, font=("Helvetica", 9), 
+                         bootstyle="secondary").pack(side="left", anchor="s")
+                
+                tb.Label(label_row, text=f"({summary['status']})", font=("Helvetica", 9, "italic"), 
+                         bootstyle=style).pack(side="left", anchor="s", padx=(10, 0))
+                
+                tb.Label(card, text=value, font=("Helvetica", 18, "bold"), 
                          bootstyle=style).pack(anchor="w", pady=(2, 0))
+            else: 
+                tb.Label(card, text=label, font=("Helvetica", 9), bootstyle="secondary").pack(anchor="w")
+                tb.Label(card, text=value, font=("Helvetica", 18, "bold"), bootstyle=style).pack(anchor="w")
+
 
 
     def _build_action_bar(self):
