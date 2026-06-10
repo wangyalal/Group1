@@ -19,7 +19,7 @@ def validate_amount(amount):
     return amount
 
 
-def add_transaction(transaction_date, amount, description, tx_type, category):
+def add_transaction(transaction_date, amount, description, tx_type, entry_method, category):
     """
     Adds a transaction of either type Income or Expense, along with respective category of trans type
     """
@@ -32,11 +32,15 @@ def add_transaction(transaction_date, amount, description, tx_type, category):
     if description is None or description.strip() == "":
         raise ValueError("Description cannot be empty.")
 
+    if entry_method is None or entry_method.strip() == "":
+        raise ValueError("Entry method cannot be empty.")
+
     insert_transaction(
         transaction_date,
         amount,
         description=description.strip(),
         tx_type=tx_type,
+        entry_method=entry_method,
         category=category
     )
 

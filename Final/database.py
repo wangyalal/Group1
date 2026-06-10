@@ -10,13 +10,17 @@ def get_db_connection():
         port="5432"
     )
 
-def insert_transaction(date, amount, description, tx_type, entry_method, category_name="Expense"):
+def insert_transaction(date, amount, description, tx_type, entry_method, category):
+    category = category.strip() if category else "Other"
+    if not category:
+        print("Database insertion error: Category cannot be empty!")
+        return False
     conn = get_db_connection()
     cursor = conn.cursor()
     
     try:
         
-        cursor.execute("INSERT INTO categories (name) VALUES (%s) ON CONFLICT (name) DO UPDATE SET name=EXCLUDED.name RETURNING id;", (category_name,))
+        cursor.execute("INSERT INTO categories (name) VALUES (%s) ON CONFLICT (name) DO UPDATE SET name=EXCLUDED.name RETURNING id;", (category,))
         category_id = cursor.fetchone()[0]
         
         
