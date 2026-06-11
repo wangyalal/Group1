@@ -55,8 +55,7 @@ def get_all_transactions():
                 WHEN t.transaction_type = 'Expense' THEN -ABS(t.amount)
                 ELSE ABS(t.amount)
             END AS display_amount,
-            t.transaction_type,
-            'Manual' AS entry_method
+            t.transaction_type
         FROM transactions t
         ORDER BY t.transaction_date DESC, t.id DESC;
     """)
