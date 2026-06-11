@@ -35,7 +35,8 @@ class graph_page(tb.Frame):
                 print(f"Error fetching chart data: {e}")
                 return
 
-            df = pd.DataFrame(tx_data, columns=['Date', 'Description', 'Category', 'Amount', 'Type', 'Method'])
+            # --- 1. Filter and Group Data ---
+            df = pd.DataFrame(tx_data, columns=['Date', 'Description', 'Category', 'Amount', 'Type'])
             df['Amount'] = df['Amount'].apply(lambda x: abs(float(x)))
 
             # Expenses Data Split
