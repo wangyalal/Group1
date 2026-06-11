@@ -329,7 +329,7 @@ class LedgerFrame(tb.Frame):
                               tags=("net",))
         else:
             for row in transactions:
-                tx_date, desc, cat, amount, tx_type, _ = row
+                tx_date, desc, cat, amount, tx_type= row
                 signed = (f"+${amount:,.2f}" if tx_type == "Income"
                           else f"-${abs(amount):,.2f}")
                 tag = "income" if tx_type == "Income" else "expense"
