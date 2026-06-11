@@ -471,9 +471,9 @@ class Expense_Tracker_Main:
                                 self.selected_type,
                                 self.ai_category_selc.get())
         if input_status:
-            Messagebox.show_info("Transaction successfully saved to database!", title="Success")
+            Messagebox.show_info(message="Transaction successfully saved to database!", title="Success")
         else:
-            Messagebox.show_error("Database insertion error! Transaction not added.", title="Error")
+            Messagebox.show_error(message="Database insertion error! Transaction not added.", title="Error")
 
         self.clear_form()
 
