@@ -1,6 +1,7 @@
 import os
 import json
-from datetime import date, timedelta
+from datetime import date, datetime, timedelta
+from dateutil import parser as d_parser
 from huggingface_hub import hf_hub_download
 #import bootstrap  # Keeps Python 3.14 DLL paths stabilized on Windows(may or may not be necessary)
 #bootstrap.initialize_environment()
@@ -83,15 +84,21 @@ def parse_natural_language_expense(user_text: str) -> dict:
             "role": "system",
             "content": (
                 "You are a precise backend data-parsing engine. Extract transactions into strict JSON.\n\n"
+                f"CURRENT REFERENCE YEAR: {date.today().year}\n\n" # Help Qwen anchor the year
                 "TRANSACTION TYPE RULES:\n"
                 "1. Look closely at the action verb in the user text to determine 'transaction_type'.\n"
                 "2. If the text uses words like 'earned', 'made', 'received', 'paid for work', 'salary', 'bonus', or 'got paid', you MUST classify it as 'Income'.\n"
                 "3. If the text uses words like 'bought', 'spent', 'paid for', 'purchased', 'cost', or 'ordered', classify it as 'Expense'.\n\n"
                 "RULES FOR TIME EXTRACTION:\n"
+                "You must extract the time using ONE of the following methods:\n\n"
+                "Method A: RELATIVE OFFSETS (If they say things like 'last week Tuesday')\n"
                 "- 'bought a sofa last week tuesday': weekday_mentioned='Tuesday', weeks_ago_modifier=1\n"
                 "- 'mop on friday two weeks ago': weekday_mentioned='Friday', weeks_ago_modifier=2\n"
                 "- 'yesterday': weekday_mentioned='Yesterday', weeks_ago_modifier=0\n"
                 "- 'today': weekday_mentioned='Today', weeks_ago_modifier=0\n\n"
+                "Method B: ABSOLUTE DATES (If they mention a specific day/month)\n"
+                "- 'bought chicken $100 22nd may': absolute_date_mentioned='22nd may'\n"
+                "- 'paid rent on 04/15': absolute_date_mentioned='04/15'\n\n"
                 "CRITICAL CATEGORY RULES:\n"
                 "If the item does not fit the specific categories, classify it as 'Other'."
             )
@@ -113,17 +120,27 @@ def parse_natural_language_expense(user_text: str) -> dict:
     raw_data = json.loads(response["choices"][0]["message"]["content"])
     
     # --- Python takes over the calculation entirely ---
-    day_name = raw_data.get("weekday_mentioned", "Today")
-    weeks_back = raw_data.get("weeks_ago_modifier", 0)
-    
-    raw_data["transaction_date"] = calc_date(day_name, weeks_back)
+    abs_date_str = raw_data.get("absolute_date_mentioned")
+    day_name = raw_data.get("weekday_mentioned")
+    weeks_back = raw_data.get("weeks_ago_modifier")
+
+    if abs_date_str:
+        try:
+            parsed_dt = d_parser.parse(abs_date_str, default=datetime.now(), fuzzy=True)
+            raw_data["transaction_date"] = parsed_dt.strftime("%Y-%m-%d")
+        except Exception:
+            raw_data["transaction_date"] = calc_date(day_name or "Today", weeks_back or 0)
+    else:
+        raw_data["transaction_date"] = calc_date(day_name or "Today", weeks_back or 0)
 
     #force positive amount
     if "amount" in raw_data and raw_data["amount"] is not None:
         raw_data["amount"] = abs(float(raw_data["amount"]))
     
     # Clean up fields so the GUI doesn't see the helper keys
-    if "weekday_mentioned" in raw_data: del raw_data["weekday_mentioned"]
-    if "weeks_ago_modifier" in raw_data: del raw_data["weeks_ago_modifier"]
+    helper_keys = ["weekday_mentioned","weeks_ago_modifier","absolute_date_mentioned"]
+    for key in helper_keys:
+        if key in raw_data:
+            del raw_data[key]
     
     return raw_data
