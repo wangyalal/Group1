@@ -35,14 +35,13 @@ class graph_page(tb.Frame):
             print(f"Error fetching chart data: {e}")
             return
 
-<<<<<<< HEAD
         df = pd.DataFrame(tx_data, columns=['Date', 'Description', 'Category', 'Amount', 'Type', 'Method'])
         df['Amount'] = df['Amount'].apply(lambda x: abs(float(x)))
-=======
-            # --- 1. Filter and Group Data ---
-            df = pd.DataFrame(tx_data, columns=['Date', 'Description', 'Category', 'Amount', 'Type'])
-            df['Amount'] = df['Amount'].apply(lambda x: abs(float(x)))
->>>>>>> origin/main
+
+        # --- 1. Filter and Group Data ---
+        df = pd.DataFrame(tx_data, columns=['Date', 'Description', 'Category', 'Amount', 'Type'])
+        df['Amount'] = df['Amount'].apply(lambda x: abs(float(x)))
+
 
         # Expenses Data Split
         expenses_df = df[df['Type'] == 'Expense']
@@ -52,89 +51,60 @@ class graph_page(tb.Frame):
         income_df = df[df['Type'] == 'Income']
         final_income_data = income_df.groupby('Category')['Amount'].sum().sort_values(ascending=False)
 
-        # Safety Check: Clean the screen and display a clean text message if there is no data
+        # Safety Check: If there's absolutely no data at all, do nothing
         if final_expense_data.empty and final_income_data.empty:
-            for widget in self.winfo_children():
-                widget.destroy()
-            no_data_lbl = tb.Label(self, text="No transactional history found to render analytics.", 
-                                   font=("Helvetica", 11, "italic"), bootstyle="secondary")
-            no_data_lbl.pack(expand=True, anchor="center")
             return
 
-        # Explicitly terminate memory leaks from hidden background figure tracks
-        import matplotlib.pyplot as plt
-        plt.close('all')
-
-        # Read the current theme window color to match the canvas background
-        bg_color = self.winfo_toplevel().cget("background") or "#F8F9FA"
-
-        # Explicit configuration settings to guarantee consistent layout formatting
+        # --- 2. Create Side-by-Side Subplots (1 Row, 2 Columns) ---
         fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(10, 5), dpi=100)
-        fig.patch.set_facecolor(bg_color)
-
         modern_colors = ['#2962FF', '#00C853', '#FFAB40', '#4DD0E1', '#FDD835', '#AA00FF']
 
-        # --- Plot Left Graph: Expenditure Breakdown ---
+        # --- 3. Plot Left Graph: Expenditure Breakdown ---
         if not final_expense_data.empty:
-            ax1.set_facecolor(bg_color)
-            wedges1, texts1, autotexts1 = ax1.pie(
+            ax1.pie(
                 final_expense_data,
                 labels=final_expense_data.index,
-                colors=modern_colors[:len(final_expense_data)] if len(final_expense_data) <= len(modern_colors) else plt.cm.tab10.colors,
+                colors=modern_colors,
                 autopct='%1.1f%%',
                 startangle=90,
-                wedgeprops={'linewidth': 1.5, 'edgecolor': bg_color},
+                wedgeprops={'linewidth': 1.5, 'edgecolor': 'white'},
+                textprops={'color': 'black', 'fontweight': 'bold', 'fontsize': 9},
                 pctdistance=0.75
             )
-            # Ensure text labels explicitly contrast with background
-            for text in texts1: text.set_color('#212529')
-            for autotext in autotexts1: autotext.set_fontweight('bold')
-            ax1.set_title("Expenditure Breakdown", fontsize=11, fontweight='bold', pad=10, color='#212529')
+            ax1.set_title("Expenditure Breakdown", fontsize=11, fontweight='bold', pad=10)
             ax1.axis('equal')
         else:
             ax1.text(0.5, 0.5, 'No Expense Data', ha='center', va='center', fontsize=12, color='gray')
             ax1.axis('off')
 
-        # --- Plot Right Graph: Income Breakdown ---
+        # --- 4. Plot Right Graph: Income Breakdown ---
         if not final_income_data.empty:
-            ax2.set_facecolor(bg_color)
-            wedges2, texts2, autotexts2 = ax2.pie(
+            ax2.pie(
                 final_income_data,
                 labels=final_income_data.index,
-                colors=modern_colors[:len(final_income_data)] if len(final_income_data) <= len(modern_colors) else plt.cm.tab10.colors,
+                colors=modern_colors,
                 autopct='%1.1f%%',
                 startangle=90,
-                wedgeprops={'linewidth': 1.5, 'edgecolor': bg_color},
+                wedgeprops={'linewidth': 1.5, 'edgecolor': 'white'},
+                textprops={'color': 'black', 'fontweight': 'bold', 'fontsize': 9},
                 pctdistance=0.75
             )
-            for text in texts2: text.set_color('#212529')
-            for autotext in autotexts2: autotext.set_fontweight('bold')
-            ax2.set_title("Income Breakdown", fontsize=11, fontweight='bold', pad=10, color='#212529')
+            ax2.set_title("Income Breakdown", fontsize=11, fontweight='bold', pad=10)
             ax2.axis('equal')
         else:
             ax2.text(0.5, 0.5, 'No Income Data', ha='center', va='center', fontsize=12, color='gray')
             ax2.axis('off')
 
+        # --- 5. Embed Into Tkinter Window Frame ---
         fig.tight_layout()
 
-        # -----------------------------------------------------------------
-        # UI FIX: Safely clear only inner sub-components to prevent grid breaks
-        # -----------------------------------------------------------------
         for widget in self.winfo_children():
             widget.destroy()
 
-        # Wrap everything in a dedicated Tkinter canvas layout frame container
-        chart_container = tb.Frame(self, bootstyle="light")
-        chart_container.pack(fill="both", expand=True, padx=10, pady=10)
-
-        from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
-        canvas = FigureCanvasTkAgg(fig, master=chart_container)
+        canvas = FigureCanvasTkAgg(fig, master=self)
         canvas_widget = canvas.get_tk_widget()
-        canvas_widget.config(bg=bg_color, highlightthickness=0) # Drops sharp grey bounding boxes
-        canvas_widget.pack(fill="both", expand=True)
-        
-        # Use an after task block to process rendering safely without locking main frames
-        self.after(10, canvas.draw)
+        canvas_widget.pack(fill="both", expand=True, padx=10, pady=10)
+        canvas.draw()
 
 #displays Transtion history
 class transaction_page(tb.Frame):
@@ -499,16 +469,13 @@ class Expense_Tracker_Main:
     def save_to_database(self):
         raw_amount = self.ai_enter_amount.get().replace("$", "")
         
-        input_status=tx.add_transaction(self.ai_selected_date.entry.get(),
+        save=tx.add_transaction(self.ai_selected_date.entry.get(),
                                 float(raw_amount or 0.0),
                                 self.ai_enter_description.get("1.0", END).strip(),
                                 self.selected_type,
                                 self.ai_category_selc.get())
-        if input_status:
-            Messagebox.show_info(message="Transaction successfully saved to database!", title="Success")
-        else:
-            Messagebox.show_error(message="Database insertion error! Transaction not added.", title="Error")
-
+        #if save:
+            #Messagebox.show_info("Transaction successfully saved to database!", title="Success")
         self.clear_form()
 
     def validate_form(self):
