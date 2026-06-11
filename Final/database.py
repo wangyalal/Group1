@@ -21,7 +21,6 @@ def insert_transaction(date, amount, description, tx_type, category):
     try:
         
         cursor.execute("INSERT INTO categories (name) VALUES (%s) ON CONFLICT (name) DO UPDATE SET name=EXCLUDED.name RETURNING id;", (category,))
-        category_id = cursor.fetchone()[0]
         
         
         query = """
