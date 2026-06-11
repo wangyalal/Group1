@@ -37,33 +37,65 @@ class graph_page(tb.Frame):
 
             df = pd.DataFrame(tx_data, columns=['Date', 'Description', 'Category', 'Amount', 'Type', 'Method'])
             df['Amount'] = df['Amount'].apply(lambda x: abs(float(x)))
+
+            # Expenses Data Split
             expenses_df = df[df['Type'] == 'Expense']
-            final_data = expenses_df.groupby('Category')['Amount'].sum().sort_values(ascending=False)
-            
-            if final_data.empty:
+            final_expense_data = expenses_df.groupby('Category')['Amount'].sum().sort_values(ascending=False)
+
+            # Income Data Split
+            income_df = df[df['Type'] == 'Income']
+            final_income_data = income_df.groupby('Category')['Amount'].sum().sort_values(ascending=False)
+
+            # Safety Check: If there's absolutely no data at all, do nothing
+            if final_expense_data.empty and final_income_data.empty:
                 return
 
-            fig, ax = plt.subplots(figsize=(6, 4), dpi=100)
+            # --- 2. Create Side-by-Side Subplots (1 Row, 2 Columns) ---
+            fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(10, 5), dpi=100)
             modern_colors = ['#2962FF', '#00C853', '#FFAB40', '#4DD0E1', '#FDD835', '#AA00FF']
-            
-            ax.pie(
-                final_data, 
-                labels=final_data.index, 
-                colors=modern_colors, 
-                autopct='%1.1f%%', 
-                startangle=90, 
-                wedgeprops={'linewidth': 1.5, 'edgecolor': 'white'},
-                textprops={'color': 'black', 'fontweight': 'bold', 'fontsize': 10},
-                pctdistance=0.8
-            )
-            
-            ax.set_title("Expenditure Breakdown by Category", fontsize=12, fontweight='bold', pad=15)
-            ax.axis('equal') 
-            ax.legend(title="Categories", labels=final_data.index, loc="best", fontsize=9)
+
+            # --- 3. Plot Left Graph: Expenditure Breakdown ---
+            if not final_expense_data.empty:
+                ax1.pie(
+                    final_expense_data,
+                    labels=final_expense_data.index,
+                    colors=modern_colors,
+                    autopct='%1.1f%%',
+                    startangle=90,
+                    wedgeprops={'linewidth': 1.5, 'edgecolor': 'white'},
+                    textprops={'color': 'black', 'fontweight': 'bold', 'fontsize': 9},
+                    pctdistance=0.75
+                )
+                ax1.set_title("Expenditure Breakdown", fontsize=11, fontweight='bold', pad=10)
+                ax1.axis('equal')
+            else:
+                ax1.text(0.5, 0.5, 'No Expense Data', ha='center', va='center', fontsize=12, color='gray')
+                ax1.axis('off')
+
+            # --- 4. Plot Right Graph: Income Breakdown ---
+            if not final_income_data.empty:
+                ax2.pie(
+                    final_income_data,
+                    labels=final_income_data.index,
+                    colors=modern_colors,
+                    autopct='%1.1f%%',
+                    startangle=90,
+                    wedgeprops={'linewidth': 1.5, 'edgecolor': 'white'},
+                    textprops={'color': 'black', 'fontweight': 'bold', 'fontsize': 9},
+                    pctdistance=0.75
+                )
+                ax2.set_title("Income Breakdown", fontsize=11, fontweight='bold', pad=10)
+                ax2.axis('equal')
+            else:
+                ax2.text(0.5, 0.5, 'No Income Data', ha='center', va='center', fontsize=12, color='gray')
+                ax2.axis('off')
+
+            # --- 5. Embed Into Tkinter Window Frame ---
             fig.tight_layout()
 
             for widget in self.winfo_children():
                 widget.destroy()
+
             canvas = FigureCanvasTkAgg(fig, master=self)
             canvas_widget = canvas.get_tk_widget()
             canvas_widget.pack(fill="both", expand=True, padx=10, pady=10)
