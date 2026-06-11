@@ -44,35 +44,25 @@ def add_transaction(transaction_date, amount, description, tx_type, category):
 
 
 def get_all_transactions():
-    """
-    Gets all transactions from the database.
-    Used to display transactions in the GUI table.
-    """
-
     conn = get_db_connection()
     cursor = conn.cursor()
-
     cursor.execute("""
         SELECT 
             t.transaction_date,
             t.description,
-            c.name AS category,
+            t.category,
             CASE
                 WHEN t.transaction_type = 'Expense' THEN -ABS(t.amount)
                 ELSE ABS(t.amount)
             END AS display_amount,
             t.transaction_type,
-            t.entry_method
+            'Manual' AS entry_method
         FROM transactions t
-        LEFT JOIN categories c ON t.category_id = c.id
         ORDER BY t.transaction_date DESC, t.id DESC;
     """)
-
     transactions = cursor.fetchall()
-
     cursor.close()
     conn.close()
-
     return transactions
 
 
@@ -152,30 +142,22 @@ def get_financial_summary():
 
 
 def get_expense_report_by_category():
-    """
-    Groups expenses by category.
-    """
-
     conn = get_db_connection()
     cursor = conn.cursor()
-
     cursor.execute("""
         SELECT 
-            c.name,
+            t.category,
             COALESCE(SUM(ABS(t.amount)), 0) AS total_spent
         FROM transactions t
-        LEFT JOIN categories c ON t.category_id = c.id
         WHERE t.transaction_type = 'Expense'
-        GROUP BY c.name
+        GROUP BY t.category
         ORDER BY total_spent DESC;
     """)
-
     report = cursor.fetchall()
-
     cursor.close()
     conn.close()
-
     return report
+
 
 def delete_all_data():
     conn = get_db_connection()
