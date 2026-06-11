@@ -465,13 +465,16 @@ class Expense_Tracker_Main:
     def save_to_database(self):
         raw_amount = self.ai_enter_amount.get().replace("$", "")
         
-        save=tx.add_transaction(self.ai_selected_date.entry.get(),
+        input_status=tx.add_transaction(self.ai_selected_date.entry.get(),
                                 float(raw_amount or 0.0),
                                 self.ai_enter_description.get("1.0", END).strip(),
                                 self.selected_type,
                                 self.ai_category_selc.get())
-        #if save:
-            #Messagebox.show_info("Transaction successfully saved to database!", title="Success")
+        if input_status:
+            Messagebox.show_info(message="Transaction successfully saved to database!", title="Success")
+        else:
+            Messagebox.show_error(message="Database insertion error! Transaction not added.", title="Error")
+
         self.clear_form()
 
     def validate_form(self):
