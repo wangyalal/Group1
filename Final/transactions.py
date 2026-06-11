@@ -162,11 +162,10 @@ def delete_all_data():
     conn = get_db_connection()
     cursor = conn.cursor()
     try:
-        query = "TRUNCATE TABLE transactions, categories RESTART IDENTITY CASCADE;"
+        cursor.execute("DELETE FROM transactions;")
         
-        cursor.execute(query)
         conn.commit()
-        print("Database wiped successfully.")
+        print("Database transactions wiped successfully.")
         return True
     except Exception as e:
         conn.rollback() 
