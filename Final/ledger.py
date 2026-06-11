@@ -53,20 +53,15 @@ def _update_transaction(transaction_id: int, tx_date, amount, description,
     conn = get_db_connection()
     cursor = conn.cursor()
     try:
-        cursor.execute(
-            "INSERT INTO categories (name) VALUES (%s) ON CONFLICT (name) DO UPDATE SET name=EXCLUDED.name RETURNING id;",
-            (category_name,)
-        )
-        category_id = cursor.fetchone()[0]
         cursor.execute("""
             UPDATE transactions
             SET transaction_date = %s,
                 amount           = %s,
                 description      = %s,
                 transaction_type = %s,
-                category_id      = %s
+                category         = %s
             WHERE id = %s;
-        """, (tx_date, Decimal(str(amount)), description, tx_type, category_id, transaction_id))
+        """, (tx_date, Decimal(str(amount)), description, tx_type, category_name, transaction_id))
         conn.commit()
         return True
     except Exception as e:
@@ -76,8 +71,6 @@ def _update_transaction(transaction_id: int, tx_date, amount, description,
     finally:
         cursor.close()
         conn.close()
-
-
 
 def get_transaction_ledger(preset="All Time", cycle_start_day=1,
                            custom_start=None, custom_end=None):
