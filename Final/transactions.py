@@ -32,7 +32,7 @@ def add_transaction(transaction_date, amount, description, tx_type, category):
     if description is None or description.strip() == "":
         raise ValueError("Description cannot be empty.")
 
-    insert_transaction(
+    insert_status=insert_transaction(
         transaction_date,
         amount,
         description.strip(),
@@ -40,7 +40,7 @@ def add_transaction(transaction_date, amount, description, tx_type, category):
         category
     )
 
-    return "Transaction added successfully."
+    return insert_status
 
 
 def get_all_transactions():
