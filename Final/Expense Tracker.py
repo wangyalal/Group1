@@ -1,6 +1,6 @@
 import threading
 import matplotlib
-matplotlib.use('Agg')
+matplotlib.use('TkAgg')
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 from collections import defaultdict
@@ -23,88 +23,113 @@ from timeframe import apply_cycle_day
 class graph_page(tb.Frame):
     def __init__(self, parent): 
         super().__init__(parent)
-        title = tb.Label(self, text="Analytics")
-        title.pack(anchor= "center", pady= 10)
+        self.title = tb.Label(self, text="Analytics")
+        self.title.pack(anchor= "center", pady= 10)
         self._ledger_ref = None
-        self.generate_analytics_chart()  
-
+        self.after(10, self.generate_analytics_chart)
     def generate_analytics_chart(self):
-        try:
-            tx_data = tx.get_all_transactions()
-        except Exception as e:
-            print(f"Error fetching chart data: {e}")
-            return
+            self.update_idletasks()
+            try:
+                tx_data = tx.get_all_transactions()
+            except Exception as e:
+                print(f"Error fetching chart data: {e}")
+                return
 
-        df = pd.DataFrame(tx_data, columns=['Date', 'Description', 'Category', 'Amount', 'Type', 'Method'])
-        df['Amount'] = df['Amount'].apply(lambda x: abs(float(x)))
+            # --- 1. Filter and Group Data ---
+            df = pd.DataFrame(tx_data, columns=['Date', 'Description', 'Category', 'Amount', 'Type'])
+            df['Amount'] = df['Amount'].apply(lambda x: abs(float(x)))
 
-        # --- 1. Filter and Group Data ---
-        df = pd.DataFrame(tx_data, columns=['Date', 'Description', 'Category', 'Amount', 'Type'])
-        df['Amount'] = df['Amount'].apply(lambda x: abs(float(x)))
+            # Expenses Data Split
+            expenses_df = df[df['Type'] == 'Expense']
+            final_expense_data = expenses_df.groupby('Category')['Amount'].sum().sort_values(ascending=False)
+
+            # Income Data Split
+            income_df = df[df['Type'] == 'Income']
+            final_income_data = income_df.groupby('Category')['Amount'].sum().sort_values(ascending=False)
+
+            # Safety Check: If there's absolutely no data at all, do nothing
+            if final_expense_data.empty and final_income_data.empty:
+                return
 
 
-        # Expenses Data Split
-        expenses_df = df[df['Type'] == 'Expense']
-        final_expense_data = expenses_df.groupby('Category')['Amount'].sum().sort_values(ascending=False)
+            for widget in self.winfo_children():
+                if widget != self.title: 
+                    widget.destroy()
+            chart_container = tb.Frame(self)
+            chart_container.pack(fill=BOTH, expand= True)
+            chart_container.pack_propagate(False)
+            chart_container.update_idletasks()
 
-        # Income Data Split
-        income_df = df[df['Type'] == 'Income']
-        final_income_data = income_df.groupby('Category')['Amount'].sum().sort_values(ascending=False)
+            dpi = 100
+            container_w = self.winfo_width()
+            container_h = self.winfo_height()
 
-        # Safety Check: If there's absolutely no data at all, do nothing
-        if final_expense_data.empty and final_income_data.empty:
-            return
+            fig_w = max(container_w -20, 400) / dpi
+            fig_h = max(container_h -20, 300) / dpi
+            # --- 2. Create Side-by-Side Subplots (1 Row, 2 Columns) ---
+            fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(fig_w, fig_h), dpi=dpi)
+            modern_colors = ['#2962FF', '#00C853', '#FFAB40', '#4DD0E1', '#FDD835', '#AA00FF']
 
-        # --- 2. Create Side-by-Side Subplots (1 Row, 2 Columns) ---
-        fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(10, 5), dpi=100)
-        modern_colors = ['#2962FF', '#00C853', '#FFAB40', '#4DD0E1', '#FDD835', '#AA00FF']
+            # --- 3. Plot Left Graph: Expenditure Breakdown ---
+            if not final_expense_data.empty:
+                ax1.pie(
+                    final_expense_data,
+                    labels=final_expense_data.index,
+                    colors=modern_colors,
+                    autopct='%1.1f%%',
+                    startangle=90,
+                    radius = 0.8,
+                    wedgeprops={'linewidth': 1.5, 'edgecolor': 'white'},
+                    textprops={'color': 'black', 'fontweight': 'bold', 'fontsize': 9},
+                    pctdistance=0.75
+                )
+                ax1.set_title("Expenditure Breakdown", fontsize=11, fontweight='bold', pad=10)
+                ax1.axis('equal')
+            else:
+                ax1.text(0.5, 0.5, 'No Expense Data', ha='center', va='center', fontsize=12, color='gray')
+                ax1.axis('off')
 
-        # --- 3. Plot Left Graph: Expenditure Breakdown ---
-        if not final_expense_data.empty:
-            ax1.pie(
-                final_expense_data,
-                labels=final_expense_data.index,
-                colors=modern_colors,
-                autopct='%1.1f%%',
-                startangle=90,
-                wedgeprops={'linewidth': 1.5, 'edgecolor': 'white'},
-                textprops={'color': 'black', 'fontweight': 'bold', 'fontsize': 9},
-                pctdistance=0.75
-            )
-            ax1.set_title("Expenditure Breakdown", fontsize=11, fontweight='bold', pad=10)
-            ax1.axis('equal')
-        else:
-            ax1.text(0.5, 0.5, 'No Expense Data', ha='center', va='center', fontsize=12, color='gray')
-            ax1.axis('off')
+            # --- 4. Plot Right Graph: Income Breakdown ---
+            if not final_income_data.empty:
+                ax2.pie(
+                    final_income_data,
+                    labels=final_income_data.index,
+                    colors=modern_colors,
+                    autopct='%1.1f%%',
+                    startangle=90,
+                    radius = 0.8,
+                    wedgeprops={'linewidth': 1.5, 'edgecolor': 'white'},
+                    textprops={'color': 'black', 'fontweight': 'bold', 'fontsize': 9},
+                    pctdistance=0.75
+                )
+                ax2.set_title("Income Breakdown", fontsize=11, fontweight='bold', pad=10)
+                ax2.axis('equal')
+            else:
+                ax2.text(0.5, 0.5, 'No Income Data', ha='center', va='center', fontsize=12, color='gray')
+                ax2.axis('off')
 
-        # --- 4. Plot Right Graph: Income Breakdown ---
-        if not final_income_data.empty:
-            ax2.pie(
-                final_income_data,
-                labels=final_income_data.index,
-                colors=modern_colors,
-                autopct='%1.1f%%',
-                startangle=90,
-                wedgeprops={'linewidth': 1.5, 'edgecolor': 'white'},
-                textprops={'color': 'black', 'fontweight': 'bold', 'fontsize': 9},
-                pctdistance=0.75
-            )
-            ax2.set_title("Income Breakdown", fontsize=11, fontweight='bold', pad=10)
-            ax2.axis('equal')
-        else:
-            ax2.text(0.5, 0.5, 'No Income Data', ha='center', va='center', fontsize=12, color='gray')
-            ax2.axis('off')
+            # --- 5. Embed Into Tkinter Window Frame ---
 
-        # --- 5. Embed Into Tkinter Window Frame ---
-        fig.tight_layout()
+            canvas = FigureCanvasTkAgg(fig, master=chart_container)
+            canvas_widget = canvas.get_tk_widget()
+            canvas_widget.pack(fill="both", expand=True, padx=10, pady=10)
+            canvas.draw()
 
-        for widget in self.winfo_children():
-            widget.destroy()
+            def on_resize(event):
+                w = event.width - 40 / 100
+                h = event.height - 40 / 100
+                if 0.5 < w < 50 and 0.5 < h < 50:
+                    fig.set_size_inches(w, h)
+                    fig.tight_layout()
+                    canvas.draw_idle()
 
-        canvas = FigureCanvasTkAgg(fig, master=self)
-        canvas_widget = canvas.get_tk_widget()
-        canvas_widget.pack(fill="both", expand=True, padx=10, pady=10)
-        canvas.draw()
+            chart_container.bind("<Configure>", on_resize)
+
+            # Force initial sizing after window is fully rendered
+            self.after(10, lambda: on_resize(type('E', (), {
+                'width': self.winfo_width(),
+                'height': self.winfo_height() -80
+            })()))
 
 #displays Transtion history
 class transaction_page(tb.Frame):
@@ -112,7 +137,7 @@ class transaction_page(tb.Frame):
         super().__init__(parent)
         title = tb.Label(self, text="Transactions")
         title.pack(anchor="center", pady=10)
-        self.ledger = LedgerFrame(self)
+        self.ledger = LedgerFrame(self, app_reference = parent)
         self.ledger.pack(fill=BOTH, expand=YES)
 
 
@@ -187,22 +212,22 @@ class Expense_Tracker_Main:
         self.transaction_type = "Expense"
         self.current_parsed_data = None
         self.selected_type = None
-        self.left_side()
-        self.right_side() 
-        self.load_graph()
+        self.right_side()
+        self.left_side()       
+        self.load_transactions()
     
 
     #Right side Frame
     def right_side(self):
         #sets the workspace
-        self.rightside = tb.Frame(self.root, width=400, bootstyle="secondary")
-        self.rightside.pack(side="right", fill="y")
+        self.rightside = tb.Frame(self.root, width=350, bootstyle="secondary")
+        self.rightside.pack(side="right", fill="y", expand= False)
         self.rightside.pack_propagate(False)
         
         #right side contents
             #Notebook Creation Frame
         self.notebook = tb.Notebook(self.rightside, bootstyle="dark")
-        self.notebook.pack(expand=True, fill=BOTH)
+        self.notebook.pack(side = "right", expand=True, fill=BOTH)
             #TAB design section
         style=tb.Style()
         style.configure('TNotebook.Tab',
@@ -273,8 +298,9 @@ class Expense_Tracker_Main:
 
         if answer == "Yes":
             delete_all_data()
+            if hasattr(self,"_ledger_ref") and self._ledger_ref:
+                self._ledger_ref._refresh()
 
-    
     def setup_ai_input_section(self, parent_frame):
         """Creates the natural language text entry area using a large text box."""
         input_frame = tb.Frame(parent_frame)
@@ -469,13 +495,18 @@ class Expense_Tracker_Main:
     def save_to_database(self):
         raw_amount = self.ai_enter_amount.get().replace("$", "")
         
-        save=tx.add_transaction(self.ai_selected_date.entry.get(),
+        input_status=tx.add_transaction(self.ai_selected_date.entry.get(),
                                 float(raw_amount or 0.0),
                                 self.ai_enter_description.get("1.0", END).strip(),
                                 self.selected_type,
                                 self.ai_category_selc.get())
-        #if save:
-            #Messagebox.show_info("Transaction successfully saved to database!", title="Success")
+        if input_status:
+            Messagebox.show_info(message="Transaction successfully saved to database!", title="Success")
+            if hasattr(self,"_ledger_ref") and self._ledger_ref:
+                self._ledger_ref._refresh()
+        else:
+            Messagebox.show_error(message="Database insertion error! Transaction not added.", title="Error")
+
         self.clear_form()
 
     def validate_form(self):
@@ -521,6 +552,7 @@ class Expense_Tracker_Main:
         self.clean_pages()
         self.current_pages = graph_page(self.display_container)
         self.current_pages.pack(fill= BOTH, expand= YES)
+        
  
     def load_transactions(self):
         self.clean_pages()
@@ -578,6 +610,12 @@ class Expense_Tracker_Main:
         self.root.mainloop()
 
 if  __name__ == "__main__":
+    import ctypes
+    try:
+        ctypes.windll.shcore.SetProcessDpiAwareness(0)
+    except Exception:
+        pass 
+
     app = Expense_Tracker_Main()
     app.run()
 

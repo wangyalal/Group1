@@ -116,9 +116,11 @@ class _CellEditor:
         x, y, w, h = bbox
         col_name = tree.heading(col_id)["text"]
 
+        editor_font = ("Helvetica", 10)
+
         if col_name == "Type":
-            self._widget = ttk.Combobox(tree, values=self.TYPE_OPTIONS,
-                                        state="readonly", width=w // 10)
+            self._widget = tb.Combobox(tree, values=self.TYPE_OPTIONS,
+                                        state="readonly", font=editor_font)
             self._widget.set(current_value)
             self._widget.bind("<<ComboboxSelected>>", self._commit)
 
@@ -126,20 +128,21 @@ class _CellEditor:
             values_col = tree["columns"][3]
             tx_type    = tree.set(item_id, values_col)
             cats = self.INCOME_CATEGORIES if tx_type == "Income" else self.EXPENSE_CATEGORIES
-            self._widget = ttk.Combobox(tree, values=cats,
-                                        state="readonly", width=w // 10)
+            self._widget = tb.Combobox(tree, values=cats,
+                                        state="readonly", font=editor_font)
             self._widget.set(current_value)
             self._widget.bind("<<ComboboxSelected>>", self._commit)
 
         else:
-            var = tk.StringVar(value=current_value)
-            self._widget = ttk.Entry(tree, textvariable=var)
+            self._widget = tb.Entry(tree, font=editor_font)
+            self._widget.insert(0, current_value)
+            self._widget.select_range(0, "end") 
             self._widget.bind("<Return>", self._commit)
             self._widget.bind("<Escape>", self._cancel)
+            self._widget.bind("<FocusOut>", self._commit)
 
         self._widget.place(x=x, y=y, width=w, height=h)
         self._widget.focus_set()
-        self._widget.bind("<FocusOut>", self._commit)
 
     def _commit(self, _event=None):
         if self._widget is None:
@@ -175,7 +178,7 @@ class LedgerFrame(tb.Frame):
         "This Year",
     ]
 
-    def __init__(self, parent, **kwargs):
+    def __init__(self, parent, app_reference = None, **kwargs):
         super().__init__(parent, **kwargs)
         self._tree            = None
         self._raw_rows        = []
@@ -185,7 +188,7 @@ class LedgerFrame(tb.Frame):
         self._custom_start    = None
         self._custom_end      = None
         self._preset_buttons  = {}
-
+        self._app_ref = app_reference
         self._build_controls()
         self._refresh()
 
@@ -309,7 +312,7 @@ class LedgerFrame(tb.Frame):
 
         self._tree = tb.Treeview(
             self, columns=col_ids, show="headings",
-            bootstyle="secondary", height=10, selectmode="browse",
+            bootstyle="secondary", height=15, selectmode="browse",
         )
 
         widths = {"Date": 110, "Description": 200, "Category": 120,
@@ -478,9 +481,11 @@ class LedgerFrame(tb.Frame):
 
         confirmed = messagebox.askyesno(
             "Confirm Delete",
-            f"Delete transaction:\n\n"
-            f"  {raw[0]}  |  {raw[1]}  |  ${abs(raw[3]):,.2f}\n\n"
-            "This cannot be undone.",
+            f"Delete transaction permanently?\n\n"
+            f"  Date: {raw[0]}\n"
+            f"  Desc: {raw[1]}\n"
+            f"  Amt:  ${abs(raw[3]):,.2f}\n\n"
+            "This action cannot be undone.",
         )
         if not confirmed:
             return
@@ -492,5 +497,11 @@ class LedgerFrame(tb.Frame):
 
         if _delete_transaction(tx_id):
             self._refresh()
+             
+            # If the main app reference exists, call its load_graph method directly
+            if self._app_ref and hasattr(self._app_ref, 'load_graph'):
+                self._app_ref.load_graph()
         else:
             messagebox.showerror("Error", "Failed to delete transaction.")
+        
+
