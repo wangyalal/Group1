@@ -35,28 +35,24 @@ class graph_page(tb.Frame):
                 print(f"Error fetching chart data: {e}")
                 return
 
-            # --- 1. Filter and Group Data ---
             df = pd.DataFrame(tx_data, columns=['Date', 'Description', 'Category', 'Amount', 'Type'])
             df['Amount'] = df['Amount'].apply(lambda x: abs(float(x)))
 
-            # Expenses Data Split
             expenses_df = df[df['Type'] == 'Expense']
             final_expense_data = expenses_df.groupby('Category')['Amount'].sum().sort_values(ascending=False)
 
-            # Income Data Split
             income_df = df[df['Type'] == 'Income']
             final_income_data = income_df.groupby('Category')['Amount'].sum().sort_values(ascending=False)
 
-            # Safety Check: If there's absolutely no data at all, do nothing
             if final_expense_data.empty and final_income_data.empty:
                 return
 
-
             for widget in self.winfo_children():
-                if widget != self.title: 
+                if widget != self.title:
                     widget.destroy()
+
             chart_container = tb.Frame(self)
-            chart_container.pack(fill=BOTH, expand= True)
+            chart_container.pack(fill=BOTH, expand=True)
             chart_container.pack_propagate(False)
             chart_container.update_idletasks()
 
@@ -64,51 +60,71 @@ class graph_page(tb.Frame):
             container_w = self.winfo_width()
             container_h = self.winfo_height()
 
-            fig_w = max(container_w -20, 400) / dpi
-            fig_h = max(container_h -20, 300) / dpi
-            # --- 2. Create Side-by-Side Subplots (1 Row, 2 Columns) ---
-            fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(fig_w, fig_h), dpi=dpi)
-            modern_colors = ['#2962FF', '#00C853', '#FFAB40', '#4DD0E1', '#FDD835', '#AA00FF']
+            fig_w = max(container_w - 20, 400) / dpi
+            fig_h = max(container_h - 20, 300) / dpi
 
-            # --- 3. Plot Left Graph: Expenditure Breakdown ---
-            if not final_expense_data.empty:
-                ax1.pie(
+            fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(fig_w, fig_h), dpi=dpi)
+            modern_colors = ['#2962FF', '#00C853', '#FFAB00', '#4DD0E1', '#FDD835', '#AA00FF']
+
+            if not final_expense_data.empty
+                wedges1, texts1, autotexts1 = ax1.pie(
                     final_expense_data,
-                    labels=final_expense_data.index,
+                    labels=None,                 
                     colors=modern_colors,
                     autopct='%1.1f%%',
                     startangle=90,
-                    radius = 0.8,
+                    radius=0.8,
                     wedgeprops={'linewidth': 1.5, 'edgecolor': 'white'},
                     textprops={'color': 'black', 'fontweight': 'bold', 'fontsize': 9},
                     pctdistance=0.75
                 )
                 ax1.set_title("Expenditure Breakdown", fontsize=11, fontweight='bold', pad=10)
                 ax1.axis('equal')
+                
+                ax1.legend(
+                    wedges1, 
+                    final_expense_data.index,
+                    title="Expense Keys",
+                    loc="upper center",
+                    bbox_to_anchor=(0.5, -0.05),
+                    ncol=2,
+                    fontsize=8,
+                    title_fontsize=9
+                )
             else:
                 ax1.text(0.5, 0.5, 'No Expense Data', ha='center', va='center', fontsize=12, color='gray')
                 ax1.axis('off')
 
-            # --- 4. Plot Right Graph: Income Breakdown ---
             if not final_income_data.empty:
-                ax2.pie(
+                wedges2, texts2, autotexts2 = ax2.pie(
                     final_income_data,
-                    labels=final_income_data.index,
+                    labels=None,                 
                     colors=modern_colors,
                     autopct='%1.1f%%',
                     startangle=90,
-                    radius = 0.8,
+                    radius=0.8,
                     wedgeprops={'linewidth': 1.5, 'edgecolor': 'white'},
                     textprops={'color': 'black', 'fontweight': 'bold', 'fontsize': 9},
                     pctdistance=0.75
                 )
                 ax2.set_title("Income Breakdown", fontsize=11, fontweight='bold', pad=10)
                 ax2.axis('equal')
+                
+                ax2.legend(
+                    wedges2, 
+                    final_income_data.index,
+                    title="Income Keys",
+                    loc="upper center",
+                    bbox_to_anchor=(0.5, -0.05),
+                    ncol=2,
+                    fontsize=8,
+                    title_fontsize=9
+                )
             else:
                 ax2.text(0.5, 0.5, 'No Income Data', ha='center', va='center', fontsize=12, color='gray')
                 ax2.axis('off')
 
-            # --- 5. Embed Into Tkinter Window Frame ---
+            fig.subplots_adjust(bottom=0.28)
 
             canvas = FigureCanvasTkAgg(fig, master=chart_container)
             canvas_widget = canvas.get_tk_widget()
@@ -121,15 +137,10 @@ class graph_page(tb.Frame):
                 if 0.5 < w < 50 and 0.5 < h < 50:
                     fig.set_size_inches(w, h)
                     fig.tight_layout()
+                    fig.subplots_adjust(bottom=0.28) 
                     canvas.draw_idle()
 
             chart_container.bind("<Configure>", on_resize)
-
-            # Force initial sizing after window is fully rendered
-            self.after(10, lambda: on_resize(type('E', (), {
-                'width': self.winfo_width(),
-                'height': self.winfo_height() -80
-            })()))
 
 #displays Transtion history
 class transaction_page(tb.Frame):
