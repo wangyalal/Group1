@@ -295,10 +295,12 @@ class Expense_Tracker_Main:
         #to take the current date that is currently set
 
     def confirm_deletion(self):
+        alert_message = "Delete all transactions permanentely? \n\n This action cannot be undone."
         answer = Messagebox.yesno(
-        title = "Confirm Selections",
-        message= "Are you sure you want to erase everything",
-        parent = self.root)
+        title = "Confirm Deletion",
+        message= alert_message,
+        parent = self.root,
+        alert=True)
 
         if answer == "Yes":
             delete_all_data()
