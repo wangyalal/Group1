@@ -146,7 +146,7 @@ class transaction_page(tb.Frame):
 #display currency page
 
 #TODO make make a display where there is a connection error
-class currency_page(tb.Frame): 
+class currency_page(tb.Frame):
     def __init__(self, parent):
         super().__init__(parent)
         title = tb.Label(self, text="Currency", font=("helvetica", 16, "bold"))
@@ -161,10 +161,14 @@ class currency_page(tb.Frame):
         self.rates_table.heading("Currency", text="Currency")
         self.rates_table.heading("Rate", text="Today's Exchange Rate", anchor="center")
 
-        self.rates_table.column("Currency", anchor="center", width= 250)
-        self.rates_table.column("Rate", anchor="center", width=250)
+        self.rates_table.column("Currency", anchor="center", width=150)
+        self.rates_table.column("Rate", anchor="center", width=150)
 
-        self.rates_table.pack(fill=BOTH,expand= YES)
+        self.rates_table.pack(fill=BOTH, expand=YES)
+
+        style = tb.Style()
+        style.configure("Treeview.Heading", font=("Helvetica", 14, "bold"), background=style.colors.primary, foreground= "white")
+        style.configure("Treeview", font=("Helvetica", 12, "bold"), rowheight=35)
 
         self.load_table_data()
 
