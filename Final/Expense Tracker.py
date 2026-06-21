@@ -64,7 +64,7 @@ class graph_page(tb.Frame):
             fig_h = max(container_h - 20, 300) / dpi
 
             fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(fig_w, fig_h), dpi=dpi)
-            modern_colors = ['#2962FF', '#00C853', '#FFAB00', '#4DD0E1', '#FDD835', '#AA00FF']
+            modern_colors = ['#2962FF', '#00C853', '#FFAB00', '#4DD0E1', '#FDD835', '#AA00FF','#FF5252']
 
             if not final_expense_data.empty:
                 wedges1, texts1, autotexts1 = ax1.pie(
