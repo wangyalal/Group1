@@ -145,7 +145,6 @@ class transaction_page(tb.Frame):
         
 #display currency page
 
-#TODO make make a display where there is a connection error
 class currency_page(tb.Frame):
     def __init__(self, parent):
         super().__init__(parent)
@@ -167,8 +166,10 @@ class currency_page(tb.Frame):
         self.rates_table.pack(fill=BOTH, expand=YES)
 
         style = tb.Style()
-        style.configure("Treeview.Heading", font=("Helvetica", 14, "bold"), background=style.colors.primary, foreground= "white")
-        style.configure("Treeview", font=("Helvetica", 12, "bold"), rowheight=35)
+        style.configure("Treeview.Heading", font=("Helvetica", 14, "bold"),
+                         background=style.colors.primary, foreground= "white")
+        style.configure("Treeview", font=("Helvetica", 12, "bold"), rowheight=35,
+                        foreground="#000000")
 
         self.load_table_data()
 
@@ -267,11 +268,12 @@ class Expense_Tracker_Main:
         time_selec_container = tb.Frame(parent_frame)
         time_selec_container.pack(fill= BOTH, pady= 10) 
 
-        screen_text_1 = tb.Label(time_selec_container, text= "Budgeting Timeframe:", font= ("helvetica", 12, "bold"))
+        screen_text_1 = tb.Label(time_selec_container, text= "Budgeting Timeframe:", font= ("helvetica", 12, "bold"),
+                                 foreground= "#000000")
         screen_text_1.pack(side =  TOP, padx= (0,15), anchor= W)
 
         screen_text_2 = tb.Label(time_selec_container, text= "Enter Budget Rollover Date (1st-28th)",
-                                  font= ("helvetica", 10))
+                                  font= ("helvetica", 10), foreground= "#000000")
         screen_text_2.pack(side= TOP,)
         rollover_date = tb.StringVar()
         budget_rollover = tb.Entry(time_selec_container, textvariable= rollover_date)
@@ -284,7 +286,8 @@ class Expense_Tracker_Main:
         #continer for database layout
         button_container = tb.Frame(parent_frame)
         button_container.pack(fill=BOTH, pady= 40)
-        screen_text_3 = tb.Label(button_container, text = "Delete all data in the Databse:", font= ("helvetica", 12, "bold"))
+        screen_text_3 = tb.Label(button_container, text = "Delete all data in the Databse:",
+                                  font= ("helvetica", 12, "bold"), foreground= "#000000")
         screen_text_3.pack(side= TOP, anchor= "w")
         delete_all_button = tb.Button(button_container, text="Delete All", bootstyle= DANGER, command=self.confirm_deletion)
         delete_all_button.pack(side= TOP, fill= X, padx= 10)
@@ -313,7 +316,8 @@ class Expense_Tracker_Main:
         input_frame.pack(fill=X, pady=(15, 10), padx=30)
 
         # Section Header
-        lbl_section1 = tb.Label(input_frame, text="AI Transaction Parsing Agent", font=("Helvetica", 10, "bold"))
+        lbl_section1 = tb.Label(input_frame, text="AI Transaction Parsing Agent",
+                                 font=("Helvetica", 10, "bold"), foreground= "#000000")
         lbl_section1.pack(anchor=W, pady=(0, 5), padx=10)
 
         # Instructions
@@ -322,7 +326,8 @@ class Expense_Tracker_Main:
             text="Enter transaction in plain English:\n(e.g., 'Bought a sofa last week tuesday $400')", 
             font=("Helvetica", 10),
             justify=LEFT,
-            wraplength=320  
+            wraplength=320,
+            foreground= "#000000"  
         )
         lbl.pack(anchor=W, pady=(5, 5), padx=10)
 
@@ -355,24 +360,25 @@ class Expense_Tracker_Main:
         self.review_frame.pack(fill=X, pady=(10, 15), padx=30)
 
         # Section Header
-        lbl_section2 = tb.Label(self.review_frame, text="Review & Confirm Extracted Data", font=("Helvetica", 10, "bold"))
+        lbl_section2 = tb.Label(self.review_frame, text="Review & Confirm Extracted Data",
+                                 font=("Helvetica", 10, "bold"), foreground= "#000000")
         lbl_section2.pack(anchor=W, pady=(0, 10), padx=10)
 
         # 1. Date Field
-        lbl_date = tb.Label(self.review_frame, text="Date:", font=("Helvetica", 9, "bold"))
+        lbl_date = tb.Label(self.review_frame, text="Date:", font=("Helvetica", 9, "bold"), foreground= "#000000")
         lbl_date.pack(anchor=W, padx=10, pady=(5, 0))
         self.ai_selected_date = tb.DateEntry(self.review_frame, dateformat="%Y-%m-%d")
         self.ai_selected_date.pack(fill=X, pady=5, padx=10)
         
         # 2. Amount Field
-        lbl_amt = tb.Label(self.review_frame, text="Amount ($):", font=("Helvetica", 9, "bold"))
+        lbl_amt = tb.Label(self.review_frame, text="Amount ($):", font=("Helvetica", 9, "bold"), foreground= "#000000")
         lbl_amt.pack(anchor=W, padx=10, pady=(5, 0))
         self.ai_enter_amount = tb.Entry(self.review_frame)
         self.ai_enter_amount.insert(0, "$0.00")
         self.ai_enter_amount.pack(fill=X, pady=5, padx=10)
 
         # 3. Streamlined Description Field
-        lbl_desc = tb.Label(self.review_frame, text="Description:", font=("Helvetica", 9, "bold"))
+        lbl_desc = tb.Label(self.review_frame, text="Description:", font=("Helvetica", 9, "bold"), foreground= "#000000")
         lbl_desc.pack(anchor=W, padx=10, pady=(5, 0))
         
         # 4 line description box
@@ -386,7 +392,7 @@ class Expense_Tracker_Main:
         self.ai_enter_description.pack(fill=X, pady=5, padx=10)
 
         # 4. Transaction type Selection Buttons
-        lbl_type = tb.Label(self.review_frame, text="Transaction Type:", font=("Helvetica", 9, "bold"))
+        lbl_type = tb.Label(self.review_frame, text="Transaction Type:", font=("Helvetica", 9, "bold"), foreground= "#000000")
         lbl_type.pack(anchor=W, padx=10, pady=(5, 0))
         
         button_frame = tb.Frame(self.review_frame)
@@ -403,7 +409,7 @@ class Expense_Tracker_Main:
         # 5. Category Selection Dropdown
         self.expense_categories = ["Food", "Rent","Phone","Utilies","Commute","Leasuire","Other"]
         self.income_categories = ["Salary", "Bonus", "Freelance/Side-gig", "Investments/Interest", "Other"]
-        lbl_cat = tb.Label(self.review_frame, text="Category:", font=("Helvetica", 9, "bold"))
+        lbl_cat = tb.Label(self.review_frame, text="Category:", font=("Helvetica", 9, "bold"), foreground= "#000000")
         lbl_cat.pack(anchor=W, padx=10, pady=(5, 0))
         
         self.ai_category_selc = tb.Combobox(self.review_frame, values=self.expense_categories, state="readonly")

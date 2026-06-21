@@ -141,7 +141,10 @@ class _CellEditor:
             self._widget.bind("<Escape>", self._cancel)
             self._widget.bind("<FocusOut>", self._commit)
 
-        self._widget.place(x=x, y=y, width=w, height=h)
+        adjusted_height = h+6
+        adjusted_y = y-3
+
+        self._widget.place(x=x, y=adjusted_y, width=w, height=adjusted_height)
         self._widget.focus_set()
 
     def _commit(self, _event=None):
@@ -210,7 +213,7 @@ class LedgerFrame(tb.Frame):
         for preset in self._BUTTON_PRESETS:
             btn = tb.Button(
                 bar, text=preset, width=12,
-                bootstyle="primary" if preset == self._preset else "outline-secondary",
+                bootstyle="primary" if preset == self._preset else "outline-dark",
                 command=lambda p=preset: self._set_preset(p),
             )
             btn.pack(side="left", padx=(0, 4))
@@ -256,8 +259,8 @@ class LedgerFrame(tb.Frame):
         else:
             text = "All Time"
 
-        tb.Label(self, text=text, font=("Helvetica", 9),
-                 bootstyle="secondary").pack(anchor="w", padx=22, pady=(2, 0))
+        tb.Label(self, text=text, font=("Helvetica", 9, "bold"), foreground= "#000000",
+                 bootstyle="secondary").pack(anchor="w", padx=22, pady=(2, 0)) 
 
 
     def _build_summary_cards(self, summary):
@@ -265,12 +268,12 @@ class LedgerFrame(tb.Frame):
         card_row.pack(fill="x", padx=20, pady=(6, 8))
 
         cards = [
-            ("Total Income",   f"+${summary['total_income']:,.2f}",   "success"),
-            ("Total Expenses", f"-${summary['total_expenses']:,.2f}", "danger"),
+            ("Total Income",   f"+${summary['total_income']:,.2f}",   "success-inverse"),
+            ("Total Expenses", f"-${summary['total_expenses']:,.2f}", "danger-inverse"),
             (
                 "Net Balance:",
                 f"{'+' if summary['net'] >= 0 else ''}${summary['net']:,.2f}",
-                "success" if summary["net"] >= 0 else "danger",
+                "success" if summary["net"] >= 0 else "danger-inverse",
             ),
         ]
 
@@ -282,18 +285,17 @@ class LedgerFrame(tb.Frame):
                 label_row = tb.Frame(card, bootstyle="secondary")
                 label_row.pack(fill="x", anchor="w")
                 
-                tb.Label(label_row, text=label, font=("Helvetica", 9), 
-                         bootstyle="secondary").pack(side="left", anchor="s")
+                tb.Label(label_row, text=label, font=("Helvetica", 9, "bold"),foreground= "#000000",
+                         bootstyle="secondary-inverse").pack(side="left", anchor="s")
                 
                 tb.Label(label_row, text=f"({summary['status']})", font=("Helvetica", 9, "italic"), 
-                         bootstyle=style).pack(side="left", anchor="s", padx=(10, 0))
+                         bootstyle=f"{style}-inverse").pack(side="left", anchor="s", padx=(10, 0))
                 
-                tb.Label(card, text=value, font=("Helvetica", 18, "bold"), 
-                         bootstyle=style).pack(anchor="w", pady=(2, 0))
+                tb.Label(card, text=value, font=("Helvetica", 18, "bold"), foreground= "#000000", 
+                         bootstyle=f"{style}-inverse").pack(anchor="w", pady=(2, 0))
             else: 
-                tb.Label(card, text=label, font=("Helvetica", 9), bootstyle="secondary").pack(anchor="w")
-                tb.Label(card, text=value, font=("Helvetica", 18, "bold"), bootstyle=style).pack(anchor="w")
-
+                tb.Label(card, text=label, font=("Helvetica", 9), foreground="#000000", bootstyle="secondary-inverse").pack(anchor="w")
+                tb.Label(card, text=value, font=("Helvetica", 18, "bold"), foreground= "#000000", bootstyle=style).pack(anchor="w")
 
 
     def _build_action_bar(self):
@@ -301,7 +303,7 @@ class LedgerFrame(tb.Frame):
         bar.pack(fill="x", padx=20, pady=(0, 4))
 
         tb.Label(bar, text="Double-click a cell to edit  •  Select a row and press Delete to remove",
-                 font=("Helvetica", 9), bootstyle="secondary").pack(side="left")
+                 font=("Helvetica", 9, "bold"), bootstyle="secondary", foreground="#000000").pack(side="left")
 
         tb.Button(bar, text="🗑  Delete", bootstyle="outline-danger",
                   command=self._on_delete).pack(side="right")
@@ -309,6 +311,9 @@ class LedgerFrame(tb.Frame):
 
     def _build_table(self, transactions, summary):
         col_ids = [c[0] for c in self.COLUMNS]
+
+        style_engine = self.winfo_toplevel().style
+        style_engine.configure("secondary.Treeview", rowheight = 28)
 
         self._tree = tb.Treeview(
             self, columns=col_ids, show="headings",
