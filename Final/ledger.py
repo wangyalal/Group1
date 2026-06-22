@@ -7,7 +7,9 @@ from decimal import Decimal, InvalidOperation
 from transactions import get_all_transactions
 from database import get_db_connection
 from timeframe import get_date_range, filter_transactions, PRESETS
-
+import openpyxl
+from openpyxl.styles import Font, PatternFill, Alignment
+from tkinter import filedialog
 
 
 def _get_transaction_id(tx_date, description, amount, tx_type):
@@ -72,6 +74,86 @@ def _update_transaction(transaction_id: int, tx_date, amount, description,
         cursor.close()
         conn.close()
 
+def export_to_excel(transactions, summary, start, end):
+    
+    filepath = filedialog.asksaveasfilename(
+        defaultextension=".xlsx",
+        filetypes=[("Excel files", "*.xlsx")],
+        initialfile="transactions_export.xlsx",
+        title="Export Transactions"
+    )
+    if not filepath:
+        return False
+
+    wb = openpyxl.Workbook()
+    ws = wb.active
+    ws.title = "Transactions"
+
+    # Period label
+    if start and end:
+        period = f"{start.strftime('%b %d, %Y')} → {end.strftime('%b %d, %Y')}"
+    else:
+        period = "All Time"
+
+    ws["A1"] = "Expense Tracker — Transaction Export"
+    ws["A1"].font = Font(bold=True, size=13)
+    ws["A2"] = f"Period: {period}"
+    ws["A2"].font = Font(italic=True, size=10)
+
+    # Header row
+    headers = ["Date", "Description", "Category", "Type", "Amount"]
+    header_fill   = PatternFill("solid", start_color="2962FF", end_color="2962FF")
+    header_font   = Font(bold=True, color="FFFFFF")
+    header_align  = Alignment(horizontal="center")
+
+    for col, header in enumerate(headers, start=1):
+        cell = ws.cell(row=4, column=col, value=header)
+        cell.fill   = header_fill
+        cell.font   = header_font
+        cell.alignment = header_align
+
+    # Data rows
+    income_font  = Font(color="28A745")
+    expense_font = Font(color="DC3545")
+
+    for row_idx, row in enumerate(transactions, start=5):
+        tx_date, desc, cat, amount, tx_type = row
+        signed = amount if tx_type == "Income" else -abs(amount)
+
+        ws.cell(row=row_idx, column=1, value=str(tx_date))
+        ws.cell(row=row_idx, column=2, value=desc)
+        ws.cell(row=row_idx, column=3, value=cat)
+        ws.cell(row=row_idx, column=4, value=tx_type)
+
+        amt_cell = ws.cell(row=row_idx, column=5, value=float(signed))
+        amt_cell.number_format = '#,##0.00'
+        amt_cell.font = income_font if tx_type == "Income" else expense_font
+
+    # Net row
+    net_row = len(transactions) + 5
+    ws.cell(row=net_row, column=1, value=f"Net ({summary['count']} transactions)").font = Font(bold=True)
+    net_cell = ws.cell(row=net_row, column=5, value=float(summary["net"]))
+    net_cell.number_format = '#,##0.00'
+    net_cell.font = Font(bold=True, color="28A745" if summary["net"] >= 0 else "DC3545")
+
+    # Summary below
+    sum_row = net_row + 2
+    ws.cell(row=sum_row,     column=1, value="Total Income").font  = Font(bold=True)
+    ws.cell(row=sum_row,     column=2, value=float(summary["total_income"])).number_format = '#,##0.00'
+    ws.cell(row=sum_row + 1, column=1, value="Total Expenses").font = Font(bold=True)
+    ws.cell(row=sum_row + 1, column=2, value=float(summary["total_expenses"])).number_format = '#,##0.00'
+    ws.cell(row=sum_row + 2, column=1, value="Status").font = Font(bold=True)
+    ws.cell(row=sum_row + 2, column=2, value=summary["status"])
+
+    # Column widths
+    ws.column_dimensions["A"].width = 14
+    ws.column_dimensions["B"].width = 30
+    ws.column_dimensions["C"].width = 16
+    ws.column_dimensions["D"].width = 12
+    ws.column_dimensions["E"].width = 14
+
+    wb.save(filepath)
+    return True
 def get_transaction_ledger(preset="All Time", cycle_start_day=1,
                            custom_start=None, custom_end=None):
                                
@@ -303,10 +385,12 @@ class LedgerFrame(tb.Frame):
         bar.pack(fill="x", padx=20, pady=(0, 4))
 
         tb.Label(bar, text="Double-click a cell to edit  •  Select a row and press Delete to remove",
-                 font=("Helvetica", 9, "bold"), bootstyle="secondary", foreground="#000000").pack(side="left")
+             font=("Helvetica", 9, "bold"), bootstyle="secondary", foreground="#000000").pack(side="left")
 
         tb.Button(bar, text="🗑  Delete", bootstyle="outline-danger",
-                  command=self._on_delete).pack(side="right")
+              command=self._on_delete).pack(side="right")
+        tb.Button(bar, text="📤  Export", bootstyle="outline-success",
+              command=self._on_export).pack(side="right", padx=(0, 6))
 
 
     def _build_table(self, transactions, summary):
@@ -457,7 +541,7 @@ class LedgerFrame(tb.Frame):
         if success:
             self._raw_rows[idx] = (new_date, new_desc, new_cat,
                                    new_amount if new_type == "Income" else -new_amount,
-                                   new_type, raw[5])
+                                   new_type)
         else:
             messagebox.showerror("Error", "Failed to save changes to database.")
             self._refresh()
@@ -508,5 +592,14 @@ class LedgerFrame(tb.Frame):
                 self._app_ref.load_graph()
         else:
             messagebox.showerror("Error", "Failed to delete transaction.")
-        
-
+    def _on_export(self):
+        transactions, summary = get_transaction_ledger(
+            preset=self._preset,
+            cycle_start_day=self._cycle_start_day,
+            custom_start=self._custom_start,
+            custom_end=self._custom_end,
+        )
+        start, end = summary["start"], summary["end"]
+        success = export_to_excel(transactions, summary, start, end)
+        if success:
+            messagebox.showinfo("Export Complete", "Transactions exported successfully.")        
