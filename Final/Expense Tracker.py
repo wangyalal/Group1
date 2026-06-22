@@ -203,7 +203,7 @@ class currency_page(tb.Frame):
             "GDP": "British Pound",
             "AUD": "Australian Dollar",
             "CAD": "Canadian Dollar",
-            "CNY": "Chinese Yan",
+            "CNY": "Chinese Yuan",
             "KRW": "South Korean Won"
         }
 
