@@ -273,36 +273,59 @@ class Expense_Tracker_Main:
 
     def settings_panel(self, parent_frame):
         header_frame = tb.Frame(parent_frame)
-        header_frame.pack(fill=X, pady= (15,10), padx= 30)
+        header_frame.pack(fill=X, pady=(15,10), padx=30)
 
-            #container buttons rollover layout
+    # container buttons rollover layout
         time_selec_container = tb.Frame(parent_frame)
-        time_selec_container.pack(fill= BOTH, pady= 10) 
+        time_selec_container.pack(fill=BOTH, pady=10)
 
-        screen_text_1 = tb.Label(time_selec_container, text= "Budgeting Timeframe:", font= ("helvetica", 12, "bold"),
-                                 foreground= "#000000")
-        screen_text_1.pack(side =  TOP, padx= (0,15), anchor= W)
+        screen_text_1 = tb.Label(time_selec_container, text="Budgeting Timeframe:", font=("helvetica", 12, "bold"),
+                             foreground="#000000")
+        screen_text_1.pack(side=TOP, padx=(0,15), anchor=W)
 
-        screen_text_2 = tb.Label(time_selec_container, text= "Enter Budget Rollover Date (1st-28th)",
-                                  font= ("helvetica", 10), foreground= "#000000")
-        screen_text_2.pack(side= TOP,)
+        screen_text_2 = tb.Label(time_selec_container, text="Enter Budget Rollover Date (1st-28th)",
+                              font=("helvetica", 10), foreground="#000000")
+        screen_text_2.pack(side=TOP)
         rollover_date = tb.StringVar()
-        budget_rollover = tb.Entry(time_selec_container, textvariable= rollover_date)
-        budget_rollover.pack(side= TOP, padx= 50, anchor= CENTER, pady= 5)
+        budget_rollover = tb.Entry(time_selec_container, textvariable=rollover_date)
+        budget_rollover.pack(side=TOP, padx=50, anchor=CENTER, pady=5)
 
-        confirm_rollover = tb.Button(time_selec_container, text= "Confirm", command= lambda: self.confirm_date(rollover_date), bootstyle="primary")
-        confirm_rollover.pack(side= TOP, fill= X, padx= 10)
-      
+        confirm_rollover = tb.Button(time_selec_container, text="Confirm",
+                                  command=lambda: self.confirm_date(rollover_date),
+                                  bootstyle="primary")
+        confirm_rollover.pack(side=TOP, fill=X, padx=10)
 
-        #continer for database layout
+    # ── Custom Date Range ──
+        tb.Separator(time_selec_container, orient="horizontal").pack(fill=X, padx=10, pady=(12, 8))
+
+        tb.Label(time_selec_container, text="Custom Date Range:",
+             font=("helvetica", 12, "bold"), foreground="#000000").pack(anchor=W, padx=10)
+        tb.Label(time_selec_container, text="Filter transactions between two dates.",
+             font=("helvetica", 10), foreground="#000000").pack(anchor=W, padx=10, pady=(2, 6))
+
+        date_row = tb.Frame(time_selec_container)
+        date_row.pack(fill=X, padx=10, pady=(0, 4))
+        tb.Label(date_row, text="From:", foreground="#000000").pack(side=LEFT, padx=(0, 4))
+        self.from_date = tb.DateEntry(date_row, dateformat="%Y-%m-%d", width=10)
+        self.from_date.pack(side=LEFT, padx=(0, 12))
+        tb.Label(date_row, text="To:", foreground="#000000").pack(side=LEFT, padx=(0, 4))
+        self.to_date = tb.DateEntry(date_row, dateformat="%Y-%m-%d", width=10)
+        self.to_date.pack(side=LEFT)
+
+        tb.Button(time_selec_container, text="Apply Range", bootstyle="primary",
+              command=lambda: apply_custom_range(self._ledger_ref, self.from_date, self.to_date)
+              ).pack(fill=X, padx=10, pady=(6, 0))
+
+    # container for database layout
         button_container = tb.Frame(parent_frame)
-        button_container.pack(fill=BOTH, pady= 40)
-        screen_text_3 = tb.Label(button_container, text = "Delete all data in the Databse:",
-                                  font= ("helvetica", 12, "bold"), foreground= "#000000")
-        screen_text_3.pack(side= TOP, anchor= "w")
-        delete_all_button = tb.Button(button_container, text="Delete All", bootstyle= DANGER, command=self.confirm_deletion)
-        delete_all_button.pack(side= TOP, fill= X, padx= 10)
-    
+        button_container.pack(fill=BOTH, pady=40)
+        screen_text_3 = tb.Label(button_container, text="Delete all data in the Database:",
+                              font=("helvetica", 12, "bold"), foreground="#000000")
+        screen_text_3.pack(side=TOP, anchor="w")
+        delete_all_button = tb.Button(button_container, text="Delete All", bootstyle=DANGER,
+                                  command=self.confirm_deletion)
+        delete_all_button.pack(side=TOP, fill=X, padx=10)
+
     def confirm_date(self, date):
         apply_cycle_day(self._ledger_ref, date)
         day = self._ledger_ref._cycle_start_day
@@ -641,4 +664,3 @@ if  __name__ == "__main__":
 
     app = Expense_Tracker_Main()
     app.run()
-
