@@ -389,7 +389,7 @@ class LedgerFrame(tb.Frame):
 
         tb.Button(bar, text="🗑  Delete", bootstyle="outline-danger",
               command=self._on_delete).pack(side="right")
-        tb.Button(bar, text="📤  Export", bootstyle="outline-success",
+        tb.Button(bar, text="📤  Export", bootstyle="outline-dark",
               command=self._on_export).pack(side="right", padx=(0, 6))
 
 
